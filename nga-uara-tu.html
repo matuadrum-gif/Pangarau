@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="mi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ngā Uara Tū — Pāngarau</title>
+<style>
+:root{
+  --ink:#1f2937; --muted:#667085; --line:#d0d5dd; --accent:#155e75;
+  --good:#16794e; --bad:#b42318; --bg:#f6f8fa; --panel:#ffffff;
+  --soft:#eef6f8; --trash:#fff1f0;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+main{max-width:1320px;margin:auto;padding:16px}
+header{text-align:center}
+h1{font-size:clamp(30px,5vw,48px);margin:4px 0}
+header p{color:var(--muted);font-size:18px;margin:6px 0 12px}
+
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+.tab{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;font-weight:800;cursor:pointer}
+.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tab small{display:block;font-weight:600;opacity:.85;margin-top:4px}
+
+.top{display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap;margin:14px 0}
+.target{border:1px solid var(--line);background:#fff;border-radius:14px;padding:9px 28px;text-align:center;min-width:240px}
+.target small{display:block;font-weight:700;color:var(--muted)}
+.target b{font-size:50px}
+#answerBox{display:none}
+#answerBox input{font-size:28px;text-align:center;width:180px;padding:10px;border:2px solid var(--line);border-radius:12px}
+
+button{border:1px solid var(--line);border-radius:11px;background:#fff;min-height:46px;padding:10px 16px;font-weight:800;font-size:16px;cursor:pointer}
+button:hover{background:#f8fafc}
+button.primary{background:var(--accent);color:#fff}
+button.primary:hover{filter:brightness(.95)}
+
+.app{display:grid;grid-template-columns:330px 1fr;gap:14px}
+.bank,.workcard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}
+.bank h2,.workcard h2{margin:0 0 8px}
+.bank>p{color:var(--muted);font-size:14px}
+.source{display:grid;grid-template-columns:165px 1fr;align-items:center;min-height:145px;border-top:1px solid #eee;padding:10px 4px}
+.source:first-of-type{border-top:0}
+.dragSource{cursor:grab;user-select:none}
+.dragSource:active{cursor:grabbing}
+.lab b{display:block}
+.lab span{color:var(--muted);font-size:14px}
+.addbtn{margin-top:8px;min-height:38px;padding:6px 10px;font-size:14px}
+
+.workspace{
+  position:relative;min-height:620px;border:2px dashed #9eb2c0;border-radius:14px;
+  overflow:hidden;background:#fff;
+}
+.workspace.dragover{border-color:var(--accent);background:#fbfeff}
+.workspace.empty:after{
+  content:"Tōia ngā poraka ki konei";
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  color:#98a2b3;font-size:22px;font-weight:bold;pointer-events:none
+}
+.workspace.readonly{background:#fbfcfd}
+.workspace.readonly:after{content:"Tirohia ngā poraka. He aha te tau?"}
+
+.piece{position:absolute;cursor:grab;user-select:none}
+.piece:active{cursor:grabbing}
+.piece.selected{outline:3px solid #83c5d2;outline-offset:3px;border-radius:6px}
+.piece.locked{cursor:default}
+svg{display:block;width:100%;height:100%;pointer-events:none}
+
+/* LOCKED MASTER ASSET SIZES */
+.bank .whole{width:145px;height:145px}
+.bank .tenth{width:145px;height:82px}
+.bank .hundredth{width:145px;height:38px}
+.bank .thousandth{width:38px;height:38px;margin-left:50px}
+
+.piece.whole{width:190px;height:190px}
+.piece.tenth{width:190px;height:108px}
+.piece.hundredth{width:190px;height:50px}
+.piece.thousandth{width:50px;height:50px}
+
+.trash{
+  margin-top:10px;border:2px dashed #e5a6a1;background:var(--trash);
+  border-radius:12px;padding:12px;text-align:center;font-weight:800;color:#9d2b22
+}
+.trash.dragover{background:#ffe2df;border-color:#c74236}
+
+.reveal{display:none;margin-top:12px}
+.reveal.show{display:block}
+.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.stat{border:1px solid var(--line);border-radius:11px;padding:9px;text-align:center;background:#fff}
+.stat b{display:block;font-size:26px}
+.stat span{font-size:12px;color:var(--muted)}
+.expanded{margin-top:8px;border:1px solid var(--line);border-radius:11px;padding:12px;text-align:center;font-weight:700;background:#fff}
+
+.feedback{text-align:center;font-size:20px;font-weight:800;min-height:32px;margin-top:10px}
+.good{color:var(--good)} .bad{color:var(--bad)}
+.hint{text-align:center;color:var(--muted);font-size:13px;margin:7px}
+
+.worksheetBar{margin-top:14px;background:var(--soft);border:1px solid #cfe3e8;border-radius:14px;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.worksheetBar strong{display:block}
+.worksheetBar span{color:var(--muted);font-size:14px}
+.worksheetBtns{display:flex;gap:8px;flex-wrap:wrap}
+
+@media(max-width:900px){
+  .tabs{grid-template-columns:1fr 1fr}
+  .app{grid-template-columns:1fr}
+  .source{display:inline-grid;width:49%;vertical-align:top}
+  .workspace{min-height:540px}
+}
+@media(max-width:540px){
+  main{padding:8px}.source{width:100%}.tabs{grid-template-columns:1fr}
+  .summary{grid-template-columns:1fr 1fr}.summary .total{grid-column:1/-1}
+  .piece.whole{width:155px;height:155px}
+  .piece.tenth{width:155px;height:88px}
+  .piece.hundredth{width:155px;height:41px}
+  .piece.thousandth{width:41px;height:41px}
+}
+
+body.modalOpen{overflow:hidden}
+.worksheetModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;overflow:auto;padding:24px}
+.worksheetModal.open{display:block}
+.sheet{max-width:900px;margin:0 auto;background:#fff;border-radius:16px;padding:28px 34px;min-height:90vh}
+.sheet h1{text-align:left;font-size:34px;margin:10px 0 2px}
+.sheet h2{margin:0 0 18px;font-size:20px;font-weight:normal;color:var(--muted)}
+.sheetActions{display:flex;justify-content:space-between;gap:10px}
+.sheetMeta{display:flex;gap:36px;margin:20px 0;font-weight:700}
+.sheetMeta span{display:inline-block;min-width:220px;border-bottom:1px solid #222}
+.sheetInstruction{color:#333;text-align:left}
+.sheetQ{font-size:18px;line-height:1.5;margin:18px 0;padding-bottom:10px;border-bottom:1px dotted #ccc}
+@media print{
+  body>*:not(main){display:none!important}
+  main>header,main>.tabs,main>.top,main>.app{display:none!important}
+  .worksheetModal{display:block!important;position:static!important;background:#fff!important;padding:0!important}
+  .sheet{max-width:none!important;margin:0!important;padding:0!important;border-radius:0!important;min-height:0!important}
+  .noPrint{display:none!important}
+  body{background:#fff!important}
+  .sheetQ{break-inside:avoid}
+}
+
+.sheetVisual{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;margin:9px 0 6px;padding:8px 10px;border:1px solid #ddd;border-radius:10px;min-height:64px}
+.sheetBlock{display:inline-block;vertical-align:bottom}
+.sheetBlock.whole{width:58px;height:58px}
+.sheetBlock.tenth{width:66px;height:40px}
+.sheetBlock.hundredth{width:72px;height:23px}
+.sheetBlock.thousandth{width:24px;height:24px}
+.sheetBlock svg{width:100%;height:100%}
+.sheetMissing{display:inline-block;min-width:170px;border-bottom:1px solid #222;margin-left:8px}
+@media print{
+ .sheetVisual{break-inside:avoid}
+}
+
+.answerPage{display:none;margin-top:0;padding-top:0;border-top:0}
+.sheet.answerMode #sheetTitle,.sheet.answerMode #sheetLevel,.sheet.answerMode .sheetMeta,.sheet.answerMode .sheetInstruction,.sheet.answerMode #sheetQuestions{display:none}
+.sheet.answerMode .answerPage{display:block}
+.answerPage h1{font-size:30px;text-align:left;margin-bottom:3px}
+.answerPage h2{font-size:19px;font-weight:normal;color:var(--muted);margin-top:0}
+.answerItem{font-size:17px;line-height:1.5;margin:14px 0;padding-bottom:8px;border-bottom:1px dotted #ccc}
+@media print{
+ .answerPage{border-top:0;margin-top:0;padding-top:0}
+}
+
+.roundbar{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:9px 12px;margin:12px 0}
+#roundTicks{margin-left:12px;letter-spacing:3px;color:var(--good);font-weight:800}
+.workspace.matOn{background:
+ linear-gradient(to right,transparent 24.85%,#cfd8dc 25%,transparent 25.15%,transparent 49.85%,#cfd8dc 50%,transparent 50.15%,transparent 74.85%,#cfd8dc 75%,transparent 75.15%),#fff}
+.matLabels{display:none;position:absolute;z-index:0;inset:0;pointer-events:none}
+.workspace.matOn .matLabels{display:grid;grid-template-columns:repeat(4,1fr)}
+.matLabels div{text-align:center;padding-top:8px;font-weight:800;color:#7b8794;font-size:14px}
+.piece{z-index:2}
+.hintBtn{display:none;margin:4px auto 10px}
+.hintBtn.show{display:block}
+@media print{.roundbar{display:none!important}}
+</style>
+</head>
+<body>
+
+<!-- LOCKED MASTER SVG LIBRARY -->
+<svg width="0" height="0" style="position:absolute">
+<defs>
+<symbol id="MASTER_TAHI" viewBox="0 0 180 180">
+  <g fill="white" stroke="#111" stroke-width="1.5">
+    <polygon points="22,48 70,20 156,48 108,76"/>
+    <polygon points="22,48 108,76 108,162 22,134"/>
+    <polygon points="108,76 156,48 156,134 108,162"/>
+  </g>
+  <g fill="none" stroke="#555" stroke-width=".65">
+    <path d="M30.6 50.8v86 M39.2 53.6v86 M47.8 56.4v86 M56.4 59.2v86 M65 62v86 M73.6 64.8v86 M82.2 67.6v86 M90.8 70.4v86 M99.4 73.2v86"/>
+    <path d="M22 56.6l86 28 M22 65.2l86 28 M22 73.8l86 28 M22 82.4l86 28 M22 91l86 28 M22 99.6l86 28 M22 108.2l86 28 M22 116.8l86 28 M22 125.4l86 28"/>
+    <path d="M26.8 45.2l86 28 M31.6 42.4l86 28 M36.4 39.6l86 28 M41.2 36.8l86 28 M46 34l86 28 M50.8 31.2l86 28 M55.6 28.4l86 28 M60.4 25.6l86 28 M65.2 22.8l86 28"/>
+    <path d="M30.6 50.8l48-28 M39.2 53.6l48-28 M47.8 56.4l48-28 M56.4 59.2l48-28 M65 62l48-28 M73.6 64.8l48-28 M82.2 67.6l48-28 M90.8 70.4l48-28 M99.4 73.2l48-28"/>
+    <path d="M112.8 73.2v86 M117.6 70.4v86 M122.4 67.6v86 M127.2 64.8v86 M132 62v86 M136.8 59.2v86 M141.6 56.4v86 M146.4 53.6v86 M151.2 50.8v86"/>
+    <path d="M108 84.6l48-28 M108 93.2l48-28 M108 101.8l48-28 M108 110.4l48-28 M108 119l48-28 M108 127.6l48-28 M108 136.2l48-28 M108 144.8l48-28 M108 153.4l48-28"/>
+  </g>
+</symbol>
+
+<symbol id="MASTER_HAUTEKAU" viewBox="0 0 180 110">
+  <g fill="white" stroke="#111" stroke-width="1.5">
+    <polygon points="20,48 66,22 158,48 112,74"/>
+    <polygon points="20,48 112,74 112,90 20,64"/>
+    <polygon points="112,74 158,48 158,64 112,90"/>
+  </g>
+  <g fill="none" stroke="#555" stroke-width=".65">
+    <path d="M29.2 50.6l46-26 M38.4 53.2l46-26 M47.6 55.8l46-26 M56.8 58.4l46-26 M66 61l46-26 M75.2 63.6l46-26 M84.4 66.2l46-26 M93.6 68.8l46-26 M102.8 71.4l46-26"/>
+    <path d="M24.6 45.4l92 26 M29.2 42.8l92 26 M33.8 40.2l92 26 M38.4 37.6l92 26 M43 35l92 26 M47.6 32.4l92 26 M52.2 29.8l92 26 M56.8 27.2l92 26 M61.4 24.6l92 26"/>
+  </g>
+</symbol>
+
+<symbol id="MASTER_HAURAU" viewBox="0 0 180 54">
+  <g fill="white" stroke="#111" stroke-width="1.5">
+    <polygon points="10,20 26,11 170,11 154,20"/>
+    <polygon points="10,20 154,20 154,40 10,40"/>
+    <polygon points="154,20 170,11 170,31 154,40"/>
+  </g>
+  <g fill="none" stroke="#555" stroke-width=".75">
+    <path d="M24.4 20v20 M38.8 20v20 M53.2 20v20 M67.6 20v20 M82 20v20 M96.4 20v20 M110.8 20v20 M125.2 20v20 M139.6 20v20"/>
+  </g>
+</symbol>
+
+<symbol id="MASTER_HAUMANO" viewBox="0 0 44 44">
+  <g fill="white" stroke="#111" stroke-width="1.5">
+    <polygon points="6,14 22,6 38,14 22,22"/>
+    <polygon points="6,14 22,22 22,39 6,31"/>
+    <polygon points="22,22 38,14 38,31 22,39"/>
+  </g>
+</symbol>
+</defs>
+</svg>
+
+<main>
+<header>
+  <h1>Ngā Uara Tū</h1>
+  <p>Whakamahia ngā poraka uara tū hei ako i ngā tau ā-ira.</p>
+</header>
+
+<div class="tabs">
+  <button class="tab active" data-mode="1">Taumata 1<small>Tūhuratia ngā Poraka</small></button>
+  <button class="tab" data-mode="2">Taumata 2<small>Hangaia te Tau</small></button>
+  <button class="tab" data-mode="3">Taumata 3<small>He Aha te Tau?</small></button>
+  <button class="tab" data-mode="4">Taumata 4<small>Whakaotia te Tau</small></button>
+</div>
+
+<div class="roundbar">
+  <div><strong id="roundProgress">Pātai 1 / 10</strong><span id="roundTicks"></span></div>
+  <button type="button" id="matToggle">Whakaatu Papa Uara Tū</button>
+</div>
+<div class="top">
+  <div class="target" id="targetBox">
+    <small id="targetLabel">Tūhuratia ngā poraka</small>
+    <b id="target">—</b>
+  </div>
+  <div id="answerBox"><input id="answerInput" inputmode="decimal" placeholder="0.000" aria-label="Tō whakautu"></div>
+  <label style="font-weight:800">Momo Tau:
+<select id="numberType" style="min-height:46px;border:1px solid var(--line);border-radius:11px;padding:8px;font-weight:700;font-size:16px">
+<option value="all">Katoa</option>
+<option value="whole">Tau Tahi 1–9</option>
+<option value="1dp">1 ira</option>
+<option value="2dp">2 ira</option>
+<option value="3dp">3 ira</option>
+</select></label>
+<button type="button" id="new">He Tau Hou 🎲</button>
+  <button type="button" id="check" class="primary">Tirohia ✓</button>
+  <button type="button" id="clear">Ūkuia</button>
+</div>
+
+<div class="app">
+  <aside class="bank" id="bank">
+    <h2>PŌRAKA / BLOCK BANK</h2>
+    <p>Tōia he poraka ki te papa mahi, pāwhiria rānei te pātene <b>Tāpiri</b>.</p>
+
+    <div class="source">
+      <div class="dragSource" draggable="true" data-type="whole"><div class="whole"><svg><use href="#MASTER_TAHI"/></svg></div></div>
+      <div class="lab"><b>TAHI (1)</b><span>Poraka nui</span><br><button type="button" class="addbtn" data-add="whole">Tāpiri</button></div>
+    </div>
+
+    <div class="source">
+      <div class="dragSource" draggable="true" data-type="tenth"><div class="tenth"><svg><use href="#MASTER_HAUTEKAU"/></svg></div></div>
+      <div class="lab"><b>HAUTEKAU (0.1)</b><span>Papa</span><br><button type="button" class="addbtn" data-add="tenth">Tāpiri</button></div>
+    </div>
+
+    <div class="source">
+      <div class="dragSource" draggable="true" data-type="hundredth"><div class="hundredth"><svg><use href="#MASTER_HAURAU"/></svg></div></div>
+      <div class="lab"><b>HAURAU (0.01)</b><span>Rākau</span><br><button type="button" class="addbtn" data-add="hundredth">Tāpiri</button></div>
+    </div>
+
+    <div class="source">
+      <div class="dragSource" draggable="true" data-type="thousandth"><div class="thousandth"><svg><use href="#MASTER_HAUMANO"/></svg></div></div>
+      <div class="lab"><b>HAUMANO (0.001)</b><span>Kūpapa iti</span><br><button type="button" class="addbtn" data-add="thousandth">Tāpiri</button></div>
+    </div>
+  </aside>
+
+  <section class="workcard">
+    <h2 id="workTitle">WĀHI HANGA TAU / WORKSPACE</h2>
+    <div id="ws" class="workspace empty" aria-label="Wāhi hanga tau">
+  <div class="matLabels"><div>TAHI</div><div>HAUTEKAU</div><div>HAURAU</div><div>HAUMANO</div></div>
+</div>
+    <p class="hint" id="hint">Tōia ngā poraka kia neke. Pāwhiria tētahi poraka kia tīpakohia.</p>
+    <div id="trash" class="trash">🗑️ MUKU — tōia he poraka ki konei hei tango</div>
+
+    <div id="reveal" class="reveal">
+      <div class="summary">
+        <div class="stat"><b id="n0">0</b><span>Tahi · 1</span></div>
+        <div class="stat"><b id="n1">0</b><span>Hautekau · 0.1</span></div>
+        <div class="stat"><b id="n2">0</b><span>Haurau · 0.01</span></div>
+        <div class="stat"><b id="n3">0</b><span>Haumano · 0.001</span></div>
+        <div class="stat total"><b id="total">0.000</b><span>Te tapeke</span></div>
+      </div>
+      <div id="expanded" class="expanded"></div>
+    </div>
+
+    <div id="feedback" class="feedback" aria-live="polite"></div>
+<button type="button" id="hintBtn" class="hintBtn">He Tīwhiri</button>
+
+    <div class="worksheetBar">
+      <div><strong>Hei Mahi</strong><span>Hangaia he mahi hei whakaoti māu ki tō pukapuka pāngarau.</span></div>
+      <div class="worksheetBtns">
+        <button type="button" id="workMe">Hei Mahi Māku</button>
+        <button type="button" id="workChallenge">Hei Mahi Wero</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="worksheetModal" class="worksheetModal" aria-hidden="true">
+  <div class="sheet" id="worksheetSheet">
+    <div class="sheetActions noPrint">
+      <button type="button" id="sheetClose">← Hoki</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" id="answerToggle">🔒 Ngā Whakautu — Mā te Kaiako</button>
+        <button type="button" id="sheetPrint" class="primary">Tāngia / Print</button>
+      </div>
+    </div>
+    <h1 id="sheetTitle">Hei Mahi Māku</h1>
+    <h2 id="sheetLevel"></h2>
+    <div class="sheetMeta">
+      <div>Ingoa: <span></span></div>
+      <div>Rā: <span></span></div>
+    </div>
+    <p class="sheetInstruction">Whakaotia ēnei mahi ki tō pukapuka pāngarau.</p>
+    <div id="sheetQuestions"></div>
+    <section class="answerPage" id="answerPage">
+      <h1>Ngā Whakautu — Mā te Kaiako</h1>
+      <h2 id="answerLevel"></h2>
+      <div id="sheetAnswers"></div>
+    </section>
+  </div>
+</div>
+</main>
+
+<script>
+(()=>{
+const ws=document.getElementById('ws');
+const trash=document.getElementById('trash');
+const feedback=document.getElementById('feedback');
+const reveal=document.getElementById('reveal');
+const expanded=document.getElementById('expanded');
+const bank=document.getElementById('bank');
+const answerBox=document.getElementById('answerBox');
+const answerInput=document.getElementById('answerInput');
+const order=['whole','tenth','hundredth','thousandth'];
+const counts={whole:0,tenth:0,hundredth:0,thousandth:0};
+const symbolMap={whole:'#MASTER_TAHI',tenth:'#MASTER_HAUTEKAU',hundredth:'#MASTER_HAURAU',thousandth:'#MASTER_HAUMANO'};
+let mode=1,target=[0,0,0,0],uid=1,dragInfo=null,selected=null,lockedMode=false;
+let roundQ=1, roundCorrect=0, attempts=0, matOn=false, t4Given=null;
+
+function makeSVG(type){
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  const use=document.createElementNS('http://www.w3.org/2000/svg','use');
+  use.setAttribute('href',symbolMap[type]);
+  svg.appendChild(use); return svg;
+}
+function totalValue(){
+  return counts.whole+counts.tenth/10+counts.hundredth/100+counts.thousandth/1000;
+}
+function targetText(){return formatTarget(target)}
+function updateReveal(){
+  order.forEach((k,i)=>document.getElementById('n'+i).textContent=counts[k]);
+  document.getElementById('total').textContent=totalValue().toFixed(3);
+  expanded.textContent=`${counts.whole} × 1 + ${counts.tenth} × 0.1 + ${counts.hundredth} × 0.01 + ${counts.thousandth} × 0.001 = ${totalValue().toFixed(3)}`;
+}
+function hideReveal(){reveal.classList.remove('show')}
+function showReveal(){updateReveal();reveal.classList.add('show')}
+function clampPiece(piece,x,y){
+  const w=piece.offsetWidth,h=piece.offsetHeight;
+  return {x:Math.max(2,Math.min(x,ws.clientWidth-w-2)),y:Math.max(2,Math.min(y,ws.clientHeight-h-2))};
+}
+function addPiece(type,x=20,y=20,locked=false){
+  const p=document.createElement('div');
+  p.className='piece '+type+(locked?' locked':'');
+  p.dataset.type=type; p.dataset.id='p'+(uid++); p.draggable=!locked;
+  p.appendChild(makeSVG(type)); ws.appendChild(p);
+
+  requestAnimationFrame(()=>{
+    const pos=clampPiece(p,x,y); p.style.left=pos.x+'px'; p.style.top=pos.y+'px';
+  });
+
+  if(!locked){
+    p.addEventListener('click',()=>{
+      if(selected)selected.classList.remove('selected');
+      selected=p;p.classList.add('selected');
+    });
+    p.addEventListener('dblclick',()=>removePiece(p));
+    p.addEventListener('pointerdown',e=>{
+      const r=p.getBoundingClientRect();
+      dragInfo={source:'piece',id:p.dataset.id,type,offsetX:e.clientX-r.left,offsetY:e.clientY-r.top};
+    });
+    p.addEventListener('dragstart',e=>{
+      const r=p.getBoundingClientRect();
+      if(!dragInfo||dragInfo.id!==p.dataset.id)dragInfo={source:'piece',id:p.dataset.id,type,offsetX:e.clientX-r.left,offsetY:e.clientY-r.top};
+      e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',p.dataset.id);
+    });
+  }
+
+  counts[type]++; ws.classList.toggle('empty',ws.querySelectorAll('.piece').length===0); hideReveal();
+  return p;
+}
+function removePiece(p){
+  if(!p||!p.isConnected||p.classList.contains('locked'))return;
+  counts[p.dataset.type]=Math.max(0,counts[p.dataset.type]-1);
+  if(selected===p)selected=null;p.remove();ws.classList.toggle('empty',ws.querySelectorAll('.piece').length===0);hideReveal();
+}
+function getPiece(id){return [...ws.querySelectorAll('.piece')].find(p=>p.dataset.id===id)}
+function clearAll(){
+  [...ws.querySelectorAll('.piece')].forEach(p=>p.remove());
+  order.forEach(k=>counts[k]=0);selected=null;feedback.textContent='';feedback.className='feedback';hideReveal();
+  ws.classList.toggle('empty',true);answerInput.value='';
+}
+function chosenNumberType(){
+  return document.getElementById('numberType')?.value || 'all';
+}
+function randomTarget(harder=false,forcedType=null){
+  let type=forcedType || chosenNumberType();
+  if(type==='all'){
+    const types=['whole','1dp','2dp','3dp'];
+    type=types[Math.floor(Math.random()*types.length)];
+  }
+  let d=[0,0,0,0];
+  if(type==='whole'){
+    d[0]=1+Math.floor(Math.random()*9);
+  }else if(type==='1dp'){
+    d[0]=Math.floor(Math.random()*(harder?10:9));
+    d[1]=harder?Math.floor(Math.random()*10):1+Math.floor(Math.random()*9);
+    if(d[0]===0 && d[1]===0)d[1]=1;
+  }else if(type==='2dp'){
+    d[0]=Math.floor(Math.random()*(harder?10:9));
+    d[1]=Math.floor(Math.random()*10);
+    d[2]=harder?Math.floor(Math.random()*10):1+Math.floor(Math.random()*9);
+    if(d[0]===0&&d[1]===0&&d[2]===0)d[2]=1;
+  }else{
+    d[0]=Math.floor(Math.random()*(harder?10:9));
+    d[1]=Math.floor(Math.random()*10);
+    d[2]=Math.floor(Math.random()*10);
+    d[3]=harder?Math.floor(Math.random()*10):1+Math.floor(Math.random()*9);
+    if(d.every(x=>x===0))d[3]=1;
+  }
+  return d;
+}
+function decimalPlacesFor(d){
+  if(d[3]!==0)return 3;
+  if(d[2]!==0)return 2;
+  if(d[1]!==0)return 1;
+  return 0;
+}
+function formatTarget(d){
+  const selected=chosenNumberType();
+  let dp=selected==='whole'?0:selected==='1dp'?1:selected==='2dp'?2:selected==='3dp'?3:decimalPlacesFor(d);
+  return dp===0?String(d[0]):`${d[0]}.${d.slice(1,dp+1).join('')}`;
+}
+function arrangeBlocks(digs,locked=true,partial=false){
+  clearAll();
+  const positions={whole:[25,45],tenth:[250,70],hundredth:[500,100],thousandth:[760,120]};
+  order.forEach((type,i)=>{
+    const number=partial?Math.floor(digs[i]/2):digs[i];
+    for(let j=0;j<number;j++){
+      let [x,y]=positions[type];
+      addPiece(type,x+(j%3)*28,y+Math.floor(j/3)*36,locked);
+    }
+  });
+}
+function resetRound(){
+  roundQ=1;roundCorrect=0;attempts=0;
+  updateRoundUI();
+}
+function updateRoundUI(){
+  document.getElementById('roundProgress').textContent=`Pātai ${Math.min(roundQ,10)} / 10`;
+  document.getElementById('roundTicks').textContent='✓ '.repeat(roundCorrect);
+}
+function nextQuestion(){
+  attempts=0;
+  document.getElementById('hintBtn').classList.remove('show');
+  feedback.textContent='';feedback.className='feedback';hideReveal();
+  if(roundQ>=10){
+    feedback.textContent='Ka rawe! Kua oti i a koe tēnei taumata.';
+    feedback.className='feedback good';
+    document.getElementById('roundProgress').textContent='10 / 10 — Kua oti';
+    return;
+  }
+  roundQ++;updateRoundUI();newQuestionForMode();
+}
+function newQuestionForMode(){
+  if(mode===1){clearAll();return;}
+  target=randomTarget(false);
+  if(mode===2){
+    document.getElementById('target').textContent=targetText();clearAll();
+  }else if(mode===3){
+    document.getElementById('target').textContent='?';arrangeBlocks(target,true,false);
+  }else{
+    document.getElementById('target').textContent=targetText();
+    arrangeT4Problem();
+  }
+}
+function arrangeT4Problem(){
+  clearAll();
+  let given=target.slice();
+  const active=target.map((x,i)=>x>0?i:-1).filter(i=>i>=0);
+  const pattern=Math.floor(Math.random()*4);
+  if(active.length){
+    if(pattern===0){ // whole place missing
+      const j=active[Math.floor(Math.random()*active.length)];given[j]=0;
+    }else if(pattern===1){ // one block missing
+      const j=active[Math.floor(Math.random()*active.length)];given[j]=Math.max(0,given[j]-1);
+    }else if(pattern===2){ // several places
+      active.forEach((j,k)=>{if(k%2===0)given[j]=Math.max(0,given[j]-Math.min(given[j],1+Math.floor(Math.random()*2)))});
+    }else{ // mixed quantities
+      active.forEach(j=>{if(Math.random()<.65)given[j]=Math.floor(Math.random()*(given[j]+1))});
+    }
+  }
+  t4Given=given.slice();
+  const positions={whole:[25,45],tenth:[250,70],hundredth:[500,100],thousandth:[760,120]};
+  order.forEach((type,i)=>{
+    for(let j=0;j<given[i];j++){
+      let [x,y]=positions[type];addPiece(type,x+(j%3)*28,y+Math.floor(j/3)*36,false);
+    }
+  });
+}
+function mismatchHint(){
+  if(mode===3){
+    return 'Tirohia anō ia uara tū: Tahi, Hautekau, Haurau, Haumano.';
+  }
+  const names=['ngā Tahi','ngā Hautekau','ngā Haurau','ngā Haumano'];
+  const bad=order.map((k,i)=>counts[k]!==target[i]?i:-1).filter(i=>i>=0);
+  return bad.length?`Tirohia ${names[bad[0]]}.`:'Tirohia anō tō tau.';
+}
+function setMode(m){
+  mode=m;resetRound();lockedMode=(m===3);
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',+b.dataset.mode===m));
+  bank.style.display=(m===3)?'none':'block';
+  document.querySelector('.app').style.gridTemplateColumns=(m===3)?'1fr':'330px 1fr';
+  answerBox.style.display=(m===3)?'block':'none';
+  trash.style.display=(m===3)?'none':'block';
+  ws.classList.toggle('readonly',m===3);
+  feedback.textContent='';hideReveal();
+
+  if(m===1){
+    document.getElementById('targetLabel').textContent='Tūhuratia ngā poraka';
+    document.getElementById('target').textContent='—';
+    document.getElementById('workTitle').textContent='WĀHI TŪHURA / EXPLORE';
+    document.getElementById('hint').textContent='Whakamahia ngā poraka. Ka pēhia te Tirohia, ka kitea te tau kua hangaia.';
+    clearAll();
+  }else if(m===2){
+    document.getElementById('targetLabel').textContent='Hangaia te tau:';
+    target=randomTarget(false);document.getElementById('target').textContent=targetText();
+    document.getElementById('workTitle').textContent='WĀHI HANGA TAU / WORKSPACE';
+    document.getElementById('hint').textContent='Tōia ngā poraka hei hanga i te tau kei runga.';
+    clearAll();
+  }else if(m===3){
+    target=randomTarget(false);
+    document.getElementById('targetLabel').textContent='He aha te tau?';
+    document.getElementById('target').textContent='?';
+    document.getElementById('workTitle').textContent='PĀNUIHIA NGĀ PORAKA';
+    document.getElementById('hint').textContent='Tirohia ngā poraka, kātahi ka tuhi i te tau.';
+    arrangeBlocks(target,true,false);
+  }else{
+    target=randomTarget(false);
+    document.getElementById('targetLabel').textContent='Whakaotia te tau:';
+    document.getElementById('target').textContent=targetText();
+    document.getElementById('workTitle').textContent='WĀHI WHAKAOTI / COMPLETE THE NUMBER';
+    document.getElementById('hint').textContent='Kua tīmatahia te tau. Tāpirihia ngā poraka e ngaro ana.';
+    arrangeT4Problem();
+  }
+}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setMode(+b.dataset.mode)));
+
+document.querySelectorAll('.dragSource').forEach(src=>{
+  src.addEventListener('dragstart',e=>{
+    if(mode===3)return;
+    dragInfo={source:'bank',type:src.dataset.type,offsetX:0,offsetY:0};
+    e.dataTransfer.effectAllowed='copy';e.dataTransfer.setData('text/plain','bank:'+src.dataset.type);
+  });
+});
+document.querySelectorAll('[data-add]').forEach(btn=>btn.addEventListener('click',()=>{
+  if(mode===3)return;
+  const i=ws.querySelectorAll('.piece').length;addPiece(btn.dataset.add,18+(i%5)*34,18+(i%6)*38,false);
+}));
+
+ws.addEventListener('dragover',e=>{if(mode===3)return;e.preventDefault();e.dataTransfer.dropEffect=(dragInfo?.source==='bank')?'copy':'move';ws.classList.add('dragover')});
+ws.addEventListener('dragleave',e=>{if(!ws.contains(e.relatedTarget))ws.classList.remove('dragover')});
+ws.addEventListener('drop',e=>{
+  if(mode===3)return;e.preventDefault();ws.classList.remove('dragover');const r=ws.getBoundingClientRect();
+  if(dragInfo?.source==='bank'){addPiece(dragInfo.type,e.clientX-r.left-30,e.clientY-r.top-30,false)}
+  else if(dragInfo?.source==='piece'){
+    const p=getPiece(dragInfo.id);if(p){
+      const x=e.clientX-r.left-(dragInfo.offsetX||p.offsetWidth/2),y=e.clientY-r.top-(dragInfo.offsetY||p.offsetHeight/2);
+      const pos=clampPiece(p,x,y);p.style.left=pos.x+'px';p.style.top=pos.y+'px';
+    }
+  }
+  dragInfo=null;hideReveal();
+});
+trash.addEventListener('dragover',e=>{e.preventDefault();trash.classList.add('dragover')});
+trash.addEventListener('dragleave',()=>trash.classList.remove('dragover'));
+trash.addEventListener('drop',e=>{e.preventDefault();trash.classList.remove('dragover');if(dragInfo?.source==='piece')removePiece(getPiece(dragInfo.id));dragInfo=null});
+
+document.getElementById('clear').addEventListener('click',()=>{
+  if(mode===3){arrangeBlocks(target,true,false);answerInput.value='';hideReveal();feedback.textContent=''}
+  else if(mode===4){arrangeT4Problem()}
+  else clearAll();
+});
+document.getElementById('new').addEventListener('click',()=>{resetRound();newQuestionForMode();});
+document.getElementById('numberType').addEventListener('change',()=>{resetRound();newQuestionForMode();});
+
+document.getElementById('check').addEventListener('click',()=>{
+  let ok=true;
+  if(mode===1){
+    showReveal();feedback.textContent='Anei te tau kua hangaia e koe.';feedback.className='feedback good';
+    roundCorrect++;updateRoundUI();setTimeout(nextQuestion,900);return;
+  }
+  if(mode===3){
+    const entered=Number(answerInput.value);
+    const correct=Number(targetText());
+    ok=answerInput.value.trim()!=='' && Math.abs(entered-correct)<0.0005;
+  }else{
+    ok=order.every((k,i)=>counts[k]===target[i]);
+  }
+  showReveal();
+  if(ok){
+    feedback.textContent='Tika! Ka rawe! ✓';feedback.className='feedback good';
+    roundCorrect++;updateRoundUI();attempts=0;
+    document.getElementById('hintBtn').classList.remove('show');
+    setTimeout(nextQuestion,900);
+  }else{
+    attempts++;
+    feedback.textContent='Whakamātauria anō.';feedback.className='feedback bad';
+    if(attempts>=2)document.getElementById('hintBtn').classList.add('show');
+  }
+});
+
+document.addEventListener('keydown',e=>{
+  if((e.key==='Delete'||e.key==='Backspace')&&selected){e.preventDefault();removePiece(selected)}
+});
+
+function worksheetQuestions(challenge=false){
+  const qs=[];
+  const n=challenge?10:8;
+  for(let i=0;i<n;i++){
+    const selectedType=chosenNumberType();
+    const sequence=['whole','whole','1dp','1dp','2dp','2dp','3dp','3dp','3dp','3dp'];
+    const qType=selectedType==='all'?sequence[Math.min(i,sequence.length-1)]:selectedType;
+    const d=randomTarget(challenge || i>=Math.floor(n/2),qType);
+    // Later questions deliberately allow meaningful zero placeholders.
+    if(i>=Math.floor(n/2) && qType!=='whole'){
+      const dp=qType==='1dp'?1:qType==='2dp'?2:3;
+      if(dp>=2 && i%2===0)d[1]=0;
+      if(dp===3 && i%3===0)d[2]=0;
+      if(d.slice(0,dp+1).every(x=>x===0))d[dp]=1;
+    }
+    const dp=qType==='whole'?0:qType==='1dp'?1:qType==='2dp'?2:3;
+    const txt=dp===0?String(d[0]):`${d[0]}.${d.slice(1,dp+1).join('')}`;
+
+    if(mode===1){
+      qs.push({text:challenge
+        ?`Hangaia tētahi tau ā-ira mā ngā poraka. Tuhia te tau, kātahi ka tuhia he ara tuarua hei whakaatu i taua tau.`
+        :`Hangaia tētahi tau ā-ira mā ngā poraka. Tuhia te tau: ________. Tuhia hoki: ___ Tahi, ___ Hautekau, ___ Haurau, ___ Haumano.`,
+        answer:`He whakautu tūwhera. Tirohia kia ōrite te tau i tuhia ki ngā poraka i whakamahia.`});
+    }else if(mode===2){
+      qs.push({text:challenge
+        ?`Hangaia te ${txt}. Tuhia te tuhinga whānui: ___ × 1 + ___ × 0.1 + ___ × 0.01 + ___ × 0.001 = ________`
+        :`Hangaia te ${txt}. Tuhia: ___ Tahi, ___ Hautekau, ___ Haurau, ___ Haumano.`,
+        answer:challenge
+          ?`${d[0]} × 1 + ${d[1]} × 0.1 + ${d[2]} × 0.01 + ${d[3]} × 0.001 = ${txt}`
+          :`${d[0]} Tahi, ${d[1]} Hautekau, ${d[2]} Haurau, ${d[3]} Haumano.`});
+    }else if(mode===3){
+      qs.push({
+        text: challenge ? `He aha te tau? Tuhia te tau me te tuhinga whānui.` : `He aha te tau? Tuhia ki te rārangi.`,
+        visual:d.slice(),
+        answerLine:true,
+        answer:`${txt}`
+      });
+    }else{
+      // Give a genuine incomplete visual representation.
+      let given=d.map((x,idx)=>{
+        if(x===0)return 0;
+        const reduction=1+Math.floor(Math.random()*Math.min(x,challenge?3:2));
+        return Math.max(0,x-reduction);
+      });
+      // Ensure at least one required place is incomplete.
+      if(given.every((x,j)=>x===d[j])){
+        const j=d.findIndex(x=>x>0); if(j>=0)given[j]=Math.max(0,d[j]-1);
+      }
+      qs.push({
+        text:challenge
+          ?`Whakaotia te ${txt}. Tirohia ngā poraka kua hoatu. He aha ngā poraka e ngaro ana? Tuhia hoki tō whakamārama.`
+          :`Whakaotia te ${txt}. Tirohia ngā poraka kua hoatu. Tuhia ngā poraka e ngaro ana.`,
+        visual:given,
+        answerLine:true,
+        answer:`E ngaro ana: ${d[0]-given[0]} Tahi, ${d[1]-given[1]} Hautekau, ${d[2]-given[2]} Haurau, ${d[3]-given[3]} Haumano.`
+      });
+    }
+  }
+  return qs;
+}
+function sheetBlockHTML(type){
+  return `<span class="sheetBlock ${type}"><svg aria-hidden="true"><use href="${symbolMap[type]}"/></svg></span>`;
+}
+function visualHTML(d){
+  let s='<div class="sheetVisual">';
+  order.forEach((type,i)=>{
+    for(let j=0;j<d[i];j++)s+=sheetBlockHTML(type);
+  });
+  if(d.every(x=>x===0))s+='<span style="color:#777">Kāore anō he poraka.</span>';
+  return s+'</div>';
+}
+function showWorksheet(challenge=false){
+  const titles={1:'Tūhuratia ngā Poraka',2:'Hangaia te Tau',3:'He Aha te Tau?',4:'Whakaotia te Tau'};
+  const qs=worksheetQuestions(challenge);
+  const title=challenge?'Hei Mahi Wero':'Hei Mahi Māku';
+
+  document.getElementById('sheetTitle').textContent=title;
+  document.getElementById('sheetLevel').textContent=`Taumata ${mode} — ${titles[mode]}`;
+  document.getElementById('sheetQuestions').innerHTML=qs.map((q,i)=>`
+    <div class="sheetQ">
+      <div><strong>${i+1}.</strong> ${q.text}</div>
+      ${q.visual?visualHTML(q.visual):''}
+      ${q.answerLine?'<div>Whakautu: <span class="sheetMissing"></span></div>':''}
+    </div>
+  `).join('');
+  document.getElementById('answerLevel').textContent=`${title} · Taumata ${mode} — ${titles[mode]}`;
+  document.getElementById('sheetAnswers').innerHTML=qs.map((q,i)=>`
+    <div class="answerItem"><strong>${i+1}.</strong> ${q.answer || 'He whakautu tūwhera.'}</div>
+  `).join('');
+  document.getElementById('worksheetSheet').classList.remove('answerMode');
+  document.getElementById('answerToggle').textContent='🔒 Ngā Whakautu — Mā te Kaiako';
+  document.getElementById('sheetPrint').textContent='Tāngia / Print';
+  document.getElementById('worksheetModal').classList.add('open');
+  document.body.classList.add('modalOpen');
+}
+function closeWorksheet(){
+  document.getElementById('worksheetModal').classList.remove('open');
+  document.body.classList.remove('modalOpen');
+}
+document.getElementById('workMe').addEventListener('click',()=>showWorksheet(false));
+document.getElementById('workChallenge').addEventListener('click',()=>showWorksheet(true));
+document.getElementById('sheetClose').addEventListener('click',closeWorksheet);
+document.getElementById('answerToggle').addEventListener('click',()=>{
+  const sheet=document.getElementById('worksheetSheet');
+  const answers=sheet.classList.toggle('answerMode');
+  document.getElementById('answerToggle').textContent=answers?'← Hoki ki te Hei Mahi':'🔒 Ngā Whakautu — Mā te Kaiako';
+  document.getElementById('sheetPrint').textContent=answers?'Tāngia Ngā Whakautu':'Tāngia / Print';
+});
+document.getElementById('sheetPrint').addEventListener('click',()=>window.print());
+document.getElementById('worksheetModal').addEventListener('click',e=>{if(e.target.id==='worksheetModal')closeWorksheet();});
+
+document.getElementById('hintBtn').addEventListener('click',()=>{
+  feedback.textContent='He Tīwhiri: '+mismatchHint();
+  feedback.className='feedback';
+});
+document.getElementById('matToggle').addEventListener('click',()=>{
+  matOn=!matOn;ws.classList.toggle('matOn',matOn);
+  document.getElementById('matToggle').textContent=matOn?'Huna Papa Uara Tū':'Whakaatu Papa Uara Tū';
+});
+setMode(1);
+})();
+</script>
+</body>
+</html>
