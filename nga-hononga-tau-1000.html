@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="mi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ngā Hononga Tau ki te 1000</title>
+<style>
+:root{
+  --ink:#17324d;--muted:#66788a;--line:#d9e2ea;--bg:#f5f8fb;--card:#fff;
+  --accent:#176b87;--accent2:#eaf5f8;--good:#198754;--goodbg:#eaf7ef;--soft:#f8fafc;
+}
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:var(--bg);color:var(--ink);margin:0}
+main{max-width:980px;margin:auto;padding:24px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;margin:16px 0}
+h1{text-align:center;font-size:42px;margin-bottom:8px}
+.intro{text-align:center;color:var(--muted)}
+.levels{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+button,input{font:inherit}
+button{min-height:52px;border:1px solid #ccd7e0;background:white;border-radius:14px;padding:10px;font-weight:bold;cursor:pointer;color:var(--ink)}
+button:hover{background:#f4f7f9}
+.active,.primary{background:var(--accent)!important;color:white!important;border-color:var(--accent)!important}
+.q{text-align:center;font-size:58px;font-weight:bold;margin:28px;font-variant-numeric:tabular-nums}
+.answer{display:flex;gap:10px;max-width:430px;margin:auto}
+.answer input{min-width:0;flex:1;border:2px solid #ccd7e0;border-radius:14px;padding:12px;text-align:center;font-size:28px}
+.feedback{text-align:center;font-size:20px;font-weight:bold;min-height:30px;margin-top:12px}
+.score{text-align:right}
+.bar{height:28px;background:#edf1f4;border-radius:20px;overflow:hidden}
+.fill{height:100%;background:#76a9b9}
+.strategy{text-align:center;background:#e8f4f7;border-radius:12px;padding:14px;margin-top:12px;display:none}
+
+/* Kāri Tere */
+.flashSets{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:14px 0}
+.flashRound{display:none;margin-top:18px}
+.flashTop{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.flashCard{border:2px solid var(--line);border-radius:22px;background:#fff;padding:28px 20px;text-align:center;margin-top:14px;min-height:300px;display:flex;flex-direction:column;justify-content:center}
+.flashQuestion{font-size:clamp(38px,7vw,64px);font-weight:900;margin:12px 0}
+.flashAnswer{display:none;font-size:clamp(48px,9vw,82px);font-weight:900;color:var(--good);margin:16px 0 4px}
+.flashAnswer.show{display:block}
+.flashEquation{display:none;font-size:20px;color:var(--muted);font-weight:700}
+.flashEquation.show{display:block}
+.flashActions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:20px}
+#nextCard{display:none}
+#nextCard.show{display:inline-block}
+.flashDone{display:none;background:var(--goodbg);border:1px solid #bfe2ca;border-radius:14px;padding:16px;text-align:center;font-size:20px;font-weight:800;margin-top:14px}
+
+/* Hei Mahi */
+.workBar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;background:var(--accent2);border:1px solid #cde2e8;border-radius:16px;padding:14px}
+.workBar span{color:var(--muted);font-size:14px}
+.workBtns{display:flex;gap:8px;flex-wrap:wrap}
+
+body.modalOpen{overflow:hidden}
+.worksheetModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:10000;overflow:auto;padding:24px}
+.worksheetModal.open{display:block}
+.sheet{max-width:900px;margin:0 auto;background:#fff;border-radius:16px;padding:28px 34px;min-height:90vh}
+.sheet h1{text-align:left;font-size:34px;margin:10px 0 2px}
+.sheet h2{margin:0 0 18px;font-size:20px;font-weight:normal;color:var(--muted)}
+.sheetActions{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sheetMeta{display:flex;gap:36px;margin:20px 0;font-weight:700}
+.sheetMeta span{display:inline-block;min-width:220px;border-bottom:1px solid #222}
+.sheetInstruction{text-align:left;color:#333}
+.sheetQ{font-size:18px;line-height:1.55;margin:18px 0;padding-bottom:10px;border-bottom:1px dotted #ccc}
+.sheetAnswer{display:none}
+.sheet.answerMode .studentView{display:none}
+.sheet.answerMode .sheetAnswer{display:block}
+.answerItem{font-size:18px;line-height:1.5;margin:15px 0;padding-bottom:8px;border-bottom:1px dotted #ccc}
+.answerBold{font-weight:900;color:var(--good)}
+
+@media(max-width:700px){
+  .levels{grid-template-columns:1fr 1fr}
+  .flashSets{grid-template-columns:1fr 1fr}
+  .answer{flex-direction:column}
+  h1{font-size:32px}.q{font-size:42px}
+}
+@media print{
+  body{background:#fff}
+  main>h1,main>.intro,main>.card{display:none!important}
+  .worksheetModal{display:block!important;position:static!important;background:#fff!important;padding:0!important}
+  .sheet{max-width:none!important;margin:0!important;padding:0!important;border-radius:0!important;min-height:0!important}
+  .sheetActions{display:none!important}
+  .sheetQ,.answerItem{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<main>
+<h1>Ngā Hononga Tau ki te 1000</h1>
+<p class="intro">Kimihia te tau e ngaro ana kia eke ki te <b>1000</b>.</p>
+
+<div class="card">
+  <div class="levels">
+    <button class="lev active" data-l="1">Taumata 1<br>Tipu Pāngarau<br>Ngā Rau</button>
+    <button class="lev" data-l="2">Taumata 2<br>Tipu Pāngarau<br>Ngā Rima Tekau</button>
+    <button class="lev" data-l="3">Taumata 3<br>Toki Pāngarau<br>Ngā Tekau</button>
+    <button class="lev" data-l="4">Taumata 4<br>Tohunga Pāngarau<br>Ngā Tahi</button>
+  </div>
+</div>
+
+<!-- Existing Taumata 1-4 practice -->
+<div class="card">
+  <div class="score"><b id="s">0</b> tika · <b id="t">0</b> katoa</div>
+  <h2 id="title">Taumata 1 · Tipu Pāngarau</h2>
+  <p id="sub">Ngā Rau · Ka tatau mā te 100.</p>
+
+  <div style="display:flex;justify-content:space-between"><b>0</b><b id="mark">600</b><b>1000</b></div>
+  <div class="bar"><div id="fill" class="fill" style="width:60%"></div></div>
+
+  <div id="q" class="q">600 + ? = 1000</div>
+
+  <form id="f">
+    <div class="answer">
+      <input id="a" inputmode="numeric" placeholder="?" aria-label="Tō whakautu">
+      <button class="primary">Tirohia</button>
+    </div>
+  </form>
+
+  <div id="fb" class="feedback"></div>
+  <div id="strat" class="strategy"></div>
+
+  <div style="text-align:center;margin-top:12px">
+    <button id="next" style="display:none">He pātai anō →</button>
+    <button id="reset">Tīmata anō</button>
+  </div>
+</div>
+
+<!-- Taumata 5 Kāri Tere -->
+<div class="card">
+  <h2>Taumata 5 · Kāri Tere</h2>
+  <p>Kōwhiria te huinga kāri. Whakaarohia te tauhono, kātahi ka whakaatu i te whakautu.</p>
+
+  <div class="flashSets">
+    <button class="flashSet active" data-m="1">Ngā Rau</button>
+    <button class="flashSet" data-m="2">Ngā Rima Tekau</button>
+    <button class="flashSet" data-m="3">Ngā Tekau</button>
+    <button class="flashSet" data-m="4">Ngā Tahi</button>
+    <button class="flashSet" data-m="5">Hanumi</button>
+  </div>
+
+  <p style="text-align:center"><button id="startCards" class="primary">Tīmata ngā Kāri</button></p>
+
+  <div id="flashRound" class="flashRound">
+    <div class="flashTop">
+      <strong id="cardProgress">Kāri 1</strong>
+      <span id="flashSetName">Ngā Rau</span>
+    </div>
+
+    <div class="flashCard">
+      <div id="flashQuestion" class="flashQuestion">600 + ___ = 1000</div>
+      <div id="flashAnswer" class="flashAnswer">400</div>
+      <div id="flashEquation" class="flashEquation">600 + 400 = 1000</div>
+
+      <div class="flashActions">
+        <button id="showAnswer" class="primary">Whakaatu Whakautu</button>
+        <button id="nextCard">Kāri Panuku →</button>
+      </div>
+    </div>
+
+    
+  </div>
+</div>
+
+<!-- Hei Mahi -->
+<div class="card">
+  <div class="workBar">
+    <div>
+      <strong>Hei Mahi</strong>
+      <span>Hangaia he mahi e hāngai ana ki te taumata, ki te huinga rānei e whakamahia ana.</span>
+    </div>
+    <div class="workBtns">
+      <button id="workMe">Hei Mahi Māku</button>
+      <button id="workChallenge">Hei Mahi Wero</button>
+    </div>
+  </div>
+</div>
+
+<div id="worksheetModal" class="worksheetModal">
+  <div class="sheet" id="worksheetSheet">
+    <div class="sheetActions">
+      <button id="sheetClose">← Hoki</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="answerToggle">🔒 Ngā Whakautu — Mā te Kaiako</button>
+        <button id="sheetPrint" class="primary">Tāngia / Print</button>
+      </div>
+    </div>
+
+    <section class="studentView">
+      <h1 id="sheetTitle">Hei Mahi Māku</h1>
+      <h2 id="sheetLevel"></h2>
+      <div class="sheetMeta">
+        <div>Ingoa: <span></span></div>
+        <div>Rā: <span></span></div>
+      </div>
+      <p class="sheetInstruction">Whakaotia ēnei mahi ki tō pukapuka pāngarau.</p>
+      <div id="sheetQuestions"></div>
+    </section>
+
+    <section class="sheetAnswer">
+      <h1>Ngā Whakautu — Mā te Kaiako</h1>
+      <h2 id="answerLevel"></h2>
+      <div id="sheetAnswers"></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(()=>{
+let l=1,n=600,s=0,t=0,locked=false;
+let flashMode=1,flashIndex=1,flashN=600,flashForm=1,flashActive=false;
+const $=x=>document.querySelector(x), $$=x=>[...document.querySelectorAll(x)];
+
+const cfg={
+  1:["Taumata 1 · Tipu Pāngarau","Ngā Rau · Ka tatau mā te 100."],
+  2:["Taumata 2 · Tipu Pāngarau","Ngā Rima Tekau · Ka tatau mā te 50."],
+  3:["Taumata 3 · Toki Pāngarau","Ngā Tekau · Ka tatau mā te 10."],
+  4:["Taumata 4 · Tohunga Pāngarau","Ngā Tahi · Whakamahia he rautaki kia eke ki te 1000."]
+};
+const setNames={1:"Ngā Rau",2:"Ngā Rima Tekau",3:"Ngā Tekau",4:"Ngā Tahi",5:"Hanumi"};
+
+function gen(x){
+  if(x===1)return Math.floor(Math.random()*11)*100;
+  if(x===2)return Math.floor(Math.random()*21)*50;
+  if(x===3)return Math.floor(Math.random()*101)*10;
+  return Math.floor(Math.random()*1001);
+}
+function nq(){
+  locked=false;n=gen(l);
+  $("#q").textContent=n+" + ? = 1000";
+  $("#mark").textContent=n;
+  $("#fill").style.width=(n/10)+"%";
+  $("#a").value="";
+  $("#fb").textContent="";
+  $("#strat").style.display="none";
+  $("#next").style.display="none";
+  $("#a").focus();
+}
+function bridge(x){
+  if(x===0)return"0 → 1000 = 1000";
+  if(x===1000)return"1000 → 1000 = 0";
+  let c=x,p=[],sum=0,z=Math.ceil(c/10)*10;
+  if(z>c){p.push(c+" → "+z+" = "+(z-c));sum+=z-c;c=z}
+  let h=Math.ceil(c/100)*100;
+  if(h>c){p.push(c+" → "+h+" = "+(h-c));sum+=h-c;c=h}
+  if(c<1000){p.push(c+" → 1000 = "+(1000-c));sum+=1000-c}
+  return p.join(" · ")+" → "+sum;
+}
+$$(".lev").forEach(b=>b.addEventListener("click",()=>{
+  l=+b.dataset.l;
+  $$(".lev").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  $("#title").textContent=cfg[l][0];
+  $("#sub").textContent=cfg[l][1];
+  nq();
+}));
+$("#f").addEventListener("submit",e=>{
+  e.preventDefault();if(locked)return;
+  let raw=$("#a").value.trim(),v=Number(raw);
+  if(raw===""||!Number.isInteger(v)){ $("#fb").textContent="Tuhia he tau.";return}
+  t++;$("#t").textContent=t;
+  if(v===1000-n){
+    s++;$("#s").textContent=s;$("#fb").textContent="Tika! Ka rawe! ✓";locked=true;
+    if(l===4){$("#strat").textContent=bridge(n);$("#strat").style.display="block"}
+    $("#next").style.display="inline-block";
+  }else $("#fb").textContent="Whakamātauria anō.";
+});
+$("#next").addEventListener("click",nq);
+$("#reset").addEventListener("click",()=>{s=t=0;$("#s").textContent=$("#t").textContent=0;nq()});
+
+/* Kāri Tere */
+$$(".flashSet").forEach(b=>b.addEventListener("click",()=>{
+  flashMode=+b.dataset.m;
+  $$(".flashSet").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  $("#flashSetName").textContent=setNames[flashMode];
+  if(flashActive){flashIndex=1;newFlashCard()}
+}));
+
+function flashNumber(){
+  const m=flashMode===5 ? 1+Math.floor(Math.random()*4) : flashMode;
+  return gen(m);
+}
+function cardQuestion(n,form){
+  const a=1000-n;
+  if(form===1)return {q:`${n} + ___ = 1000`,a,e:`${n} + ${a} = 1000`};
+  if(form===2)return {q:`___ + ${n} = 1000`,a,e:`${a} + ${n} = 1000`};
+  if(form===3)return {q:`1000 − ${n} = ___`,a,e:`1000 − ${n} = ${a}`};
+  return {q:`Te tauhono o te ${n} = ___`,a,e:`${n} + ${a} = 1000`};
+}
+function newFlashCard(){
+  flashN=flashNumber();
+  flashForm=1+Math.floor(Math.random()*4);
+  const c=cardQuestion(flashN,flashForm);
+  $("#cardProgress").textContent=`Kāri ${flashIndex}`;
+  $("#flashQuestion").textContent=c.q;
+  $("#flashAnswer").textContent=c.a;
+  $("#flashEquation").textContent=c.e;
+  $("#flashAnswer").classList.remove("show");
+  $("#flashEquation").classList.remove("show");
+  $("#showAnswer").style.display="inline-block";
+  $("#nextCard").classList.remove("show");
+}
+$("#startCards").addEventListener("click",()=>{
+  flashActive=true;flashIndex=1;
+  $("#flashRound").style.display="block";
+  $("#flashSetName").textContent=setNames[flashMode];
+  newFlashCard();
+});
+$("#showAnswer").addEventListener("click",()=>{
+  $("#flashAnswer").classList.add("show");
+  $("#flashEquation").classList.add("show");
+  $("#showAnswer").style.display="none";
+  $("#nextCard").classList.add("show");
+});
+$("#nextCard").addEventListener("click",()=>{
+  flashIndex++;
+  newFlashCard();
+});
+
+/* Hei Mahi */
+function currentContext(){
+  if(flashActive && $("#flashRound").style.display==="block"){
+    return {type:"flash",mode:flashMode,label:`Taumata 5 · Kāri Tere · ${setNames[flashMode]}`};
+  }
+  return {type:"level",mode:l,label:cfg[l][0]};
+}
+function worksheetBase(mode){
+  return gen(mode===5?1+Math.floor(Math.random()*4):mode);
+}
+function worksheetQuestions(challenge=false){
+  const ctx=currentContext(),qs=[];
+  const count=challenge?10:8;
+
+  for(let i=0;i<count;i++){
+    let mode=ctx.type==="flash"?ctx.mode:l;
+    if(mode===5)mode=1+Math.floor(Math.random()*4);
+    const x=worksheetBase(mode);
+    const a=1000-x;
+    const form=challenge ? 1+Math.floor(Math.random()*4) : 1+Math.floor(Math.random()*2);
+
+    let text,answer;
+    if(form===1){text=`${x} + ___ = 1000`;answer=a}
+    else if(form===2){text=`___ + ${x} = 1000`;answer=a}
+    else if(form===3){text=`1000 − ${x} = ___`;answer=a}
+    else{text=`Te tauhono o te ${x} = ___`;answer=a}
+
+    qs.push({text,answer,check:`${x} + ${a} = 1000`});
+  }
+
+  if(challenge){
+    qs.push({
+      text:"Whakamāramatia tō rautaki mō tētahi o ngā pātai i runga ake nei.",
+      answer:"He whakautu tūwhera. Me whakamārama te tamaiti i tētahi rautaki tika mō te kimi tauhono ki te 1000.",
+      open:true
+    });
+  }
+  return qs;
+}
+function showWorksheet(challenge=false){
+  const ctx=currentContext();
+  const qs=worksheetQuestions(challenge);
+  const title=challenge?"Hei Mahi Wero":"Hei Mahi Māku";
+
+  $("#worksheetSheet").classList.remove("answerMode");
+  $("#answerToggle").textContent="🔒 Ngā Whakautu — Mā te Kaiako";
+  $("#sheetPrint").textContent="Tāngia / Print";
+  $("#sheetTitle").textContent=title;
+  $("#sheetLevel").textContent=ctx.label;
+  $("#answerLevel").textContent=`${title} · ${ctx.label}`;
+
+  $("#sheetQuestions").innerHTML=qs.map((q,i)=>`
+    <div class="sheetQ"><strong>${i+1}.</strong> ${q.text}</div>
+  `).join("");
+
+  $("#sheetAnswers").innerHTML=qs.map((q,i)=>`
+    <div class="answerItem"><strong>${i+1}.</strong> ${
+      q.open ? q.answer : `<span class="answerBold">${q.answer}</span> &nbsp; <span style="color:#66788a">${q.check}</span>`
+    }</div>
+  `).join("");
+
+  $("#worksheetModal").classList.add("open");
+  document.body.classList.add("modalOpen");
+}
+function closeWorksheet(){
+  $("#worksheetModal").classList.remove("open");
+  document.body.classList.remove("modalOpen");
+}
+$("#workMe").addEventListener("click",()=>showWorksheet(false));
+$("#workChallenge").addEventListener("click",()=>showWorksheet(true));
+$("#sheetClose").addEventListener("click",closeWorksheet);
+$("#answerToggle").addEventListener("click",()=>{
+  const answerMode=$("#worksheetSheet").classList.toggle("answerMode");
+  $("#answerToggle").textContent=answerMode?"← Hoki ki te Hei Mahi":"🔒 Ngā Whakautu — Mā te Kaiako";
+  $("#sheetPrint").textContent=answerMode?"Tāngia Ngā Whakautu":"Tāngia / Print";
+});
+$("#sheetPrint").addEventListener("click",()=>window.print());
+$("#worksheetModal").addEventListener("click",e=>{if(e.target.id==="worksheetModal")closeWorksheet()});
+
+nq();
+})();
+</script>
+</main>
+</body>
+</html>
