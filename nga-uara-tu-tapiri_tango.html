@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="mi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ngā Uara Tū — Tāpiri me te Tango — TEST</title>
+<style>
+:root{
+  --ink:#1f2937;--muted:#667085;--line:#d0d5dd;--accent:#155e75;
+  --good:#16794e;--bad:#b42318;--bg:#f6f8fa;--panel:#fff;--soft:#eef6f8;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+main{max-width:1250px;margin:auto;padding:16px}
+header{text-align:center}
+h1{font-size:clamp(30px,5vw,46px);margin:4px 0}
+header p{color:var(--muted);font-size:17px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:16px 0}
+.tab{background:white;border:1px solid var(--line);border-radius:14px;padding:11px;font-weight:800;cursor:pointer}
+.tab.active{background:var(--accent);color:white;border-color:var(--accent)}
+.tab small{display:block;font-weight:600;opacity:.9;margin-top:4px}
+.problemCard{background:white;border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px;text-align:center}
+.problem{font-size:42px;font-weight:900;margin:5px}
+.instruction{font-size:18px;color:var(--muted)}
+.layout{display:grid;grid-template-columns:285px 1fr;gap:14px}
+.bank,.workcard{background:white;border:1px solid var(--line);border-radius:16px;padding:14px}
+.bank h2,.workcard h2{margin-top:0}
+.bankItem{border-top:1px solid #eee;padding:12px 3px}
+.bankItem:first-of-type{border-top:0}
+.bankItem b{display:block;font-size:17px}
+.bankItem span{color:var(--muted);font-size:13px}
+.addrow{display:flex;gap:6px;margin-top:7px}
+button{border:1px solid var(--line);background:#fff;border-radius:10px;min-height:42px;padding:8px 12px;font-weight:800;cursor:pointer}
+button.primary{background:var(--accent);color:white;border-color:var(--accent)}
+button.small{min-height:36px;padding:5px 10px}
+.mats{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:stretch}
+.mat{border:2px dashed #9eb2c0;border-radius:14px;min-height:310px;padding:12px;background:#fff}
+.mat[data-mat="A"]{background:#f7fbff}
+.mat[data-mat="B"]{background:#fff8f7}
+.mat.dragover{border-color:var(--accent);box-shadow:0 0 0 3px #d6edf2 inset}
+.transferHelp{display:none;text-align:center;padding:8px 4px;font-weight:800;color:var(--muted)}
+.transferHelp.show{display:block}
+.transferArrow{font-size:34px;color:var(--accent);line-height:1}
+.block[draggable="true"]{cursor:grab}
+.block[draggable="true"]:active{cursor:grabbing}
+.mat.active{border-color:var(--accent);box-shadow:0 0 0 2px #d6edf2 inset}
+.mat h3{margin:0 0 4px;text-align:center}
+.mat .value{text-align:center;font-size:24px;font-weight:850;color:var(--accent)}
+.blocks{display:flex;flex-wrap:wrap;align-content:flex-start;gap:8px;margin-top:12px;min-height:210px}
+.block{position:relative;display:block;cursor:pointer;user-select:none;border:0;flex:0 0 auto;filter:drop-shadow(1px 2px 1px rgba(0,0,0,.16))}
+.block::after{content:"";position:absolute;inset:0;pointer-events:none}
+.block.whole{
+ width:92px;
+ height:82px;
+ margin:2px 8px 2px 2px;
+ background:none;
+ border:0;
+ filter:none;
+}
+.block.whole::before,.block.whole::after{display:none!important;content:none!important}
+.block.whole svg{width:100%;height:100%;display:block;overflow:visible;pointer-events:none}
+.block.tenth{width:68px;height:68px;background:
+ repeating-linear-gradient(0deg,transparent 0 6px,rgba(39,120,24,.36) 6px 7px),
+ repeating-linear-gradient(90deg,transparent 0 6px,rgba(39,120,24,.36) 6px 7px),
+ linear-gradient(135deg,#8bd454,#4eae2c);border:1px solid #3a8c22;border-radius:2px}
+.block.hundredth{width:17px;height:68px;background:
+ repeating-linear-gradient(0deg,transparent 0 6px,rgba(177,113,0,.38) 6px 7px),
+ linear-gradient(90deg,#ffd84a,#ffae00);border:1px solid #df9200;border-radius:2px}
+.block.thousandth{width:23px;height:23px;background:linear-gradient(135deg,#ff6b65,#ef3434);border:1px solid #cf2727;border-radius:2px}
+.bankBlock{transform:scale(.72);transform-origin:left center;margin:2px 0 -8px 4px}
+.bankBlock.whole{transform:scale(.78);margin:4px 10px 0 4px}
+.blockMenu{position:fixed;z-index:50;min-width:235px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:7px}
+.blockMenu button{display:block;width:100%;text-align:left;border:0;background:#fff;padding:10px;border-radius:8px}
+.blockMenu button:hover{background:var(--soft)}
+.blockMenu .menuTitle{padding:6px 10px;color:var(--muted);font-size:12px;font-weight:800}
+.bankVisual{height:68px;display:flex;align-items:center}
+
+.matHint{text-align:center;color:var(--muted);font-size:12px}
+.controls{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.feedback{min-height:32px;text-align:center;font-size:19px;font-weight:850;margin-top:10px}
+.good{color:var(--good)}.bad{color:var(--bad)}
+.exchange{display:none;margin-top:12px;padding:12px;background:var(--soft);border-radius:12px;text-align:center}
+.exchange.show{display:block}
+.answerArea{display:none;margin-top:14px;padding:14px;background:var(--soft);border-radius:12px;text-align:center}
+.answerArea.show{display:block}
+.answerArea input{font-size:27px;width:160px;text-align:center;padding:8px;border:2px solid var(--line);border-radius:10px}
+.resultBlocks{display:none;margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:12px;background:white}
+.resultBlocks.show{display:block}
+.resultBlocks .blocks{min-height:80px}
+.progress{text-align:center;color:var(--muted);font-weight:700;margin:8px}
+@media(max-width:850px){.layout{grid-template-columns:1fr}.mats{grid-template-columns:1fr}.transferHelp{display:none!important}.tabs{grid-template-columns:1fr 1fr}}
+@media(max-width:500px){.tabs{grid-template-columns:1fr}.problem{font-size:34px}}
+
+.worksheetBar{
+ margin-top:16px;background:var(--soft);border:1px solid #cfe3e8;border-radius:14px;
+ padding:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap
+}
+.worksheetBar strong{display:block}
+.worksheetBar span{color:var(--muted);font-size:14px}
+.worksheetBtns{display:flex;gap:8px;flex-wrap:wrap}
+body.modalOpen{overflow:hidden}
+.worksheetModal{
+ display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);
+ z-index:10000;overflow:auto;padding:24px
+}
+.worksheetModal.open{display:block}
+.sheet{
+ max-width:900px;margin:0 auto;background:#fff;border-radius:16px;
+ padding:28px 34px;min-height:90vh
+}
+.sheetActions{
+ display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;
+ margin-bottom:20px
+}
+.sheetActions .backBtn{justify-self:start}
+.sheetActions .teacherBtn{justify-self:end}
+.sheetActions .printBtn{justify-self:end;background:var(--accent);color:#fff;border-color:var(--accent)}
+.sheet h1{text-align:left;font-size:clamp(42px,6vw,64px);margin:18px 0 4px;letter-spacing:-1px}
+.refreshRow{display:flex;justify-content:flex-start;gap:10px;flex-wrap:wrap;margin:8px 0 18px}
+@media(max-width:700px){
+ .sheetActions{grid-template-columns:1fr 1fr}
+ .sheetActions .backBtn{grid-column:1/2}
+ .sheetActions .teacherBtn{grid-column:1/2}
+ .sheetActions .printBtn{grid-column:2/3;grid-row:1/3}
+}
+
+.sheet h2{margin:0 0 18px;font-size:19px;font-weight:normal;color:var(--muted)}
+.sheetMeta{display:flex;gap:36px;margin:20px 0;font-weight:700;flex-wrap:wrap}
+.sheetMeta span{display:inline-block;min-width:220px;border-bottom:1px solid #222}
+.sheetInstruction{color:#333;text-align:left}
+.sheetQ{
+ font-size:20px;line-height:1.5;margin:16px 0;padding:13px 8px;
+ border-bottom:1px dotted #bbb;display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center
+}
+.sheetQ .space{display:inline-block;min-width:130px;border-bottom:1px solid #222}
+.sheetTag{font-size:12px;color:var(--muted);font-weight:700}
+.answerPage{display:none}
+.sheet.answerMode #sheetTitle,.sheet.answerMode #sheetLevel,.sheet.answerMode .sheetMeta,
+.sheet.answerMode .sheetInstruction,.sheet.answerMode #sheetQuestions{display:none}
+.sheet.answerMode .answerPage{display:block}
+.answerItem{font-size:18px;line-height:1.5;margin:12px 0;padding-bottom:8px;border-bottom:1px dotted #ccc}
+@media print{
+ body>*:not(main){display:none!important}
+ main>header,main>.tabs,main>.problemCard,main>.layout,main>.worksheetBar{display:none!important}
+ .worksheetModal{display:block!important;position:static!important;background:#fff!important;padding:0!important}
+ .sheet{max-width:none!important;margin:0!important;padding:0!important;border-radius:0!important;min-height:0!important}
+ .noPrint{display:none!important}
+ .sheetQ,.answerItem{break-inside:avoid}
+ body{background:#fff!important}
+}
+
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>Ngā Uara Tū — Tāpiri me te Tango</h1>
+<p>Whakaaturia te rapanga ki ngā poraka uara tū. Kātahi ka kimi i te whakautu.</p>
+</header>
+
+<div class="tabs">
+<button class="tab active" data-mode="add">1 — Tāpiri<small>Kāore he whakawhiti</small></button>
+<button class="tab" data-mode="sub">2 — Tango<small>Kāore he whakawhiti</small></button>
+<button class="tab" data-mode="addRegroup">3 — Tāpiri Whakawhiti<small>10 → 1</small></button>
+<button class="tab" data-mode="subRegroup">4 — Tango Whakawhiti<small>1 → 10</small></button>
+</div>
+
+<div class="problemCard">
+<div class="progress" id="progress">Rapanga 1 o te 10</div>
+<div class="problem" id="problem"></div>
+<div class="instruction" id="instruction"></div>
+</div>
+
+<div class="layout">
+<section class="bank">
+<h2>Pēke Poraka</h2>
+<p style="color:var(--muted)">Kōwhiria te papa mahi, kātahi ka tāpiri poraka.</p>
+
+<div class="bankItem">
+<b>TAHI — 1</b><span>poraka nui</span>
+<div class="bankVisual"><div class="block whole bankBlock" aria-hidden="true"></div></div><div class="addrow"><button class="small add" data-type="whole">+ Tāpiri</button></div>
+</div>
+<div class="bankItem">
+<b>HAUTEKAU — 0.1</b><span>papa</span>
+<div class="bankVisual"><div class="block tenth bankBlock" aria-hidden="true"></div></div><div class="addrow"><button class="small add" data-type="tenth">+ Tāpiri</button></div>
+</div>
+<div class="bankItem">
+<b>HAURAU — 0.01</b><span>rākau</span>
+<div class="bankVisual"><div class="block hundredth bankBlock" aria-hidden="true"></div></div><div class="addrow"><button class="small add" data-type="hundredth">+ Tāpiri</button></div>
+</div>
+<div class="bankItem">
+<b>HAUMANO — 0.001</b><span>poraka iti</span>
+<div class="bankVisual"><div class="block thousandth bankBlock" aria-hidden="true"></div></div><div class="addrow"><button class="small add" data-type="thousandth">+ Tāpiri</button></div>
+</div>
+
+<p class="matHint">Pāwhiria tētahi poraka i runga i te papa hei tango atu.</p>
+</section>
+
+<section class="workcard">
+<h2 id="workTitle">Whakaaturia ngā tau ki ngā poraka</h2>
+<div class="mats">
+<div class="mat active" id="matA" data-mat="A">
+<h3 id="labelA">Tau Tuatahi</h3>
+<div class="value" id="valueA">0</div>
+<div class="blocks" id="blocksA"></div>
+</div>
+<div class="transferHelp" id="transferHelp">
+<div class="transferArrow">→</div>
+<div>Nuku poraka</div>
+<small>mai i te Tau Tīmatanga<br>ki te wāhi Tangohia</small>
+</div>
+<div class="mat" id="matB" data-mat="B">
+<h3 id="labelB">Tau Tuarua</h3>
+<div class="value" id="valueB">0</div>
+<div class="blocks" id="blocksB"></div>
+</div>
+</div>
+
+<div class="exchange" id="exchangeBox">
+<strong>Whakawhiti Poraka</strong>
+<p id="exchangeText">Ka taea te whakawhiti 10 haurau hei 1 hautekau, 10 hautekau rānei hei 1 tahi.</p>
+<div class="controls">
+<button id="exchangeDown">1 → 10</button>
+<button id="exchangeUp">10 → 1</button>
+</div>
+</div>
+
+<div class="controls">
+<button id="clear">Ūkui</button>
+<button class="primary" id="checkBuild">Tirohia ngā Poraka</button>
+</div>
+<div class="feedback" id="feedback"></div>
+
+<div class="answerArea" id="answerArea">
+<h3>He aha te whakautu?</h3>
+<input id="answer" inputmode="decimal" placeholder="0.00">
+<button class="primary" id="checkAnswer">Tirohia</button>
+<div class="resultBlocks" id="resultBox">
+<strong>Te whakautu ki ngā poraka</strong>
+<div class="blocks" id="resultBlocks"></div>
+</div>
+</div>
+</section>
+</div>
+
+<div class="worksheetBar">
+  <div>
+    <strong>📝 Hei Mahi Tā — Pepamahi</strong>
+    <span>Hangaia he pepamahi e hāngai ana ki te taumata kei runga.</span>
+  </div>
+  <div class="worksheetBtns">
+    <button id="makeMatched">Hei Mahi Māku</button>
+    <button id="makeChallenge">Hei Mahi Wero</button>
+    <button id="showAnswers">Ngā Whakautu</button>
+  </div>
+</div>
+
+</main>
+<div id="blockMenu" class="blockMenu" style="display:none">
+  <div class="menuTitle">WHAKAWHITI HE PORAKA UARA TŪ</div>
+  <div id="menuActions"></div>
+</div>
+
+
+<div class="worksheetModal" id="worksheetModal">
+  <div class="sheet" id="sheet">
+    <div class="sheetActions noPrint">
+      <button id="closeSheet" class="backBtn">← Hoki</button>
+      <button id="teacherAnswers" class="teacherBtn">🔒 Ngā Whakautu — Mā te Kaiako</button>
+      <button id="printSheet" class="printBtn">Tāngia / Print</button>
+    </div>
+
+    <h1 id="sheetTitle">Hei Mahi Māku</h1>
+    <div class="refreshRow noPrint">
+      <button id="refreshSheet">↻ Whakahou — Pepamahi Hou</button>
+    </div>
+    <h2 id="sheetLevel"></h2>
+
+    <div class="sheetMeta">
+      <div>Ingoa: <span></span></div>
+      <div>Rā: <span></span></div>
+    </div>
+
+    <p class="sheetInstruction" id="sheetInstruction"></p>
+    <div id="sheetQuestions"></div>
+
+    <div class="answerPage" id="answerPage">
+      <h1>Ngā Whakautu — Mā te Kaiako</h1>
+      <h2 id="answerLevel"></h2>
+      <div id="answerList"></div>
+    </div>
+  </div>
+</div>
+
+<!--
+V8 WORKSHEET UI
+Worksheet header now mirrors the established layout:
+Hoki | Nga Whakautu - Ma te Kaiako | Tangia / Print
+Adds Whakahou - Pepamahi Hou to regenerate a fresh 10-question sheet at the same level.
+-->
+<script>
+const vals={whole:1,tenth:.1,hundredth:.01,thousandth:.001};
+const labels={whole:"1",tenth:"0.1",hundredth:"0.01",thousandth:"0.001"};
+let mode="add", activeMat="A", round=1, problem=null;
+let mats={A:[],B:[]};
+
+function r3(n){return Math.round(n*1000)/1000}
+function matValue(k){return r3(mats[k].reduce((s,t)=>s+vals[t],0))}
+function count(k,type){return mats[k].filter(x=>x===type).length}
+
+function makeProblem(){
+ let a,b;
+ if(mode==="add"){
+   const As=[.2,.3,.4,.5,.6,.7,1.2,1.4];
+   const Bs=[.11,.12,.13,.21,.22,.23,.3,.4];
+   do{a=As[Math.floor(Math.random()*As.length)];b=Bs[Math.floor(Math.random()*Bs.length)]}
+   while(Math.floor((a%1)*10)+Math.floor((b%1)*10)>=10 || Math.round((a*100)%10)+Math.round((b*100)%10)>=10);
+ }
+ if(mode==="sub"){
+   const pairs=[[.75,.23],[.86,.24],[.67,.35],[1.45,.23],[.94,.42],[.58,.16],[1.76,.34]];
+   [a,b]=pairs[Math.floor(Math.random()*pairs.length)];
+ }
+ if(mode==="addRegroup"){
+   const pairs=[[.68,.27],[.57,.36],[.48,.35],[.76,.18],[1.68,.27],[.39,.46]];
+   [a,b]=pairs[Math.floor(Math.random()*pairs.length)];
+ }
+ if(mode==="subRegroup"){
+   const pairs=[[.5,.23],[.7,.36],[.62,.28],[.81,.47],[1.2,.46],[1.03,.58]];
+   [a,b]=pairs[Math.floor(Math.random()*pairs.length)];
+ }
+ return {a:r3(a),b:r3(b),ans:r3(mode.startsWith("add")?a+b:a-b)};
+}
+
+function decimalCounts(n){
+ let m=Math.round(n*1000);
+ return {
+   whole:Math.floor(m/1000),
+   tenth:Math.floor((m%1000)/100),
+   hundredth:Math.floor((m%100)/10),
+   thousandth:m%10
+ };
+}
+function matches(k,n){
+ const c=decimalCounts(n);
+ return Object.keys(vals).every(t=>count(k,t)===c[t]);
+}
+
+function wholeCubeSVG(){
+ return `
+ <svg viewBox="0 0 120 100" aria-hidden="true">
+   <defs>
+     <linearGradient id="frontGrad" x1="0" y1="0" x2="1" y2="1">
+       <stop offset="0%" stop-color="#5aa2ff"/>
+       <stop offset="100%" stop-color="#1767d2"/>
+     </linearGradient>
+     <linearGradient id="topGrad" x1="0" y1="0" x2="0" y2="1">
+       <stop offset="0%" stop-color="#8ac0ff"/>
+       <stop offset="100%" stop-color="#4d91ee"/>
+     </linearGradient>
+     <linearGradient id="sideGrad" x1="0" y1="0" x2="1" y2="1">
+       <stop offset="0%" stop-color="#347edc"/>
+       <stop offset="100%" stop-color="#1352ae"/>
+     </linearGradient>
+   </defs>
+
+   <!-- top -->
+   <polygon points="22,24 42,10 98,24 78,38"
+            fill="url(#topGrad)" stroke="#0f4fa9" stroke-width="1.5"/>
+   <!-- front -->
+   <polygon points="22,24 78,38 78,94 22,80"
+            fill="url(#frontGrad)" stroke="#0f4fa9" stroke-width="1.5"/>
+   <!-- right -->
+   <polygon points="78,38 98,24 98,80 78,94"
+            fill="url(#sideGrad)" stroke="#0f4fa9" stroke-width="1.5"/>
+
+   <!-- front grid -->
+   ${Array.from({length:9},(_,i)=>{
+      const x=22+(56/10)*(i+1);
+      const top=24+(14/56)*(x-22);
+      const bot=80+(14/56)*(x-22);
+      return `<line x1="${x}" y1="${top}" x2="${x}" y2="${bot}" stroke="#0b5bb8" stroke-width=".65"/>`
+   }).join("")}
+   ${Array.from({length:9},(_,i)=>{
+      const t=(i+1)/10;
+      const yL=24+(80-24)*t;
+      const yR=38+(94-38)*t;
+      return `<line x1="22" y1="${yL}" x2="78" y2="${yR}" stroke="#0b5bb8" stroke-width=".65"/>`
+   }).join("")}
+
+   <!-- top grid -->
+   ${Array.from({length:9},(_,i)=>{
+      const t=(i+1)/10;
+      const x1=22+(78-22)*t;
+      const y1=24+(38-24)*t;
+      const x2=42+(98-42)*t;
+      const y2=10+(24-10)*t;
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#2f79d8" stroke-width=".6"/>`
+   }).join("")}
+   ${Array.from({length:9},(_,i)=>{
+      const t=(i+1)/10;
+      const x1=22+(42-22)*t;
+      const y1=24+(10-24)*t;
+      const x2=78+(98-78)*t;
+      const y2=38+(24-38)*t;
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#2f79d8" stroke-width=".6"/>`
+   }).join("")}
+
+   <!-- side grid -->
+   ${Array.from({length:9},(_,i)=>{
+      const t=(i+1)/10;
+      const x1=78+(98-78)*t;
+      const y1=38+(24-38)*t;
+      const x2=78+(98-78)*t;
+      const y2=94+(80-94)*t;
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#0d4f9f" stroke-width=".6"/>`
+   }).join("")}
+   ${Array.from({length:9},(_,i)=>{
+      const t=(i+1)/10;
+      const yL=38+(94-38)*t;
+      const yR=24+(80-24)*t;
+      return `<line x1="78" y1="${yL}" x2="98" y2="${yR}" stroke="#0d4f9f" stroke-width=".6"/>`
+   }).join("")}
+ </svg>`;
+}
+function renderBlock(type,k,container,index=null){
+ const d=document.createElement("div");
+ d.className="block "+type;
+ d.setAttribute("aria-label", labels[type]);
+ if(type==="whole") d.innerHTML=wholeCubeSVG();
+ if(k){
+   d.draggable=true;
+   d.title="Tōia tēnei poraka ki tētahi atu wāhi";
+   d.dataset.from=k;
+   d.dataset.type=type;
+   d.dataset.index=index===null?mats[k].indexOf(type):index;
+   d.addEventListener("dragstart",e=>{
+     e.dataTransfer.setData("text/plain",JSON.stringify({
+       from:k,type:type,index:Number(d.dataset.index)
+     }));
+     e.dataTransfer.effectAllowed="move";
+   });
+   d.addEventListener("click",e=>{
+     e.stopPropagation();
+     if(mode.startsWith("sub") && k==="A"){
+       openBlockMenu(e,d,type,Number(d.dataset.index));
+     }
+   });
+
+ }
+ container.appendChild(d);
+}
+function render(){
+ ["A","B"].forEach(k=>{
+   const box=document.getElementById("blocks"+k);box.innerHTML="";
+   mats[k].forEach((t,i)=>renderBlock(t,k,box,i));
+   document.getElementById("value"+k).textContent=matValue(k);
+   document.getElementById("mat"+k).classList.toggle("active",activeMat===k);
+ });
+ document.getElementById("problem").textContent=`${problem.a} ${mode.startsWith("add")?"+":"−"} ${problem.b} = ?`;
+ document.getElementById("progress").textContent=`Rapanga ${round} o te 10`;
+ document.getElementById("labelA").textContent=mode.startsWith("add")?"Tau Tuatahi":"Tau Tīmatanga";
+ document.getElementById("labelB").textContent=mode.startsWith("add")?"Tau Tuarua":"Tangohia";
+ document.getElementById("instruction").textContent=mode.startsWith("add")
+   ?"Hangaia ngā tau e rua ki ngā poraka. Kātahi ka whakakotahi i ngā uara."
+   :`Kua hangaia te ${problem.a} ki te Tau Tīmatanga. Tōia ngā poraka ki Tangohia hei tango i te ${problem.b}. Ki te hiahia whakawhiti, pāwhiria te poraka i te Tau Tīmatanga.`;
+ const isSub=mode.startsWith("sub");
+ document.getElementById("transferHelp").classList.toggle("show",isSub);
+ const regroup=mode.includes("Regroup");
+ document.getElementById("exchangeBox").classList.toggle("show",regroup && !isSub);
+ document.querySelectorAll(".add").forEach(b=>{
+   b.disabled=isSub;
+   b.style.opacity=isSub?".42":"1";
+ });
+ document.getElementById("exchangeText").textContent=mode==="subRegroup"
+   ?"Ki te kore e rahi ngā poraka iti hei tango, whakawhitia tētahi poraka nui ake hei 10 poraka o te uara e whai ake ana."
+   :"Ki te 10 ngā poraka o tētahi uara, ka taea te whakawhiti hei 1 poraka o te uara nui ake.";
+}
+
+function setNew(){
+ mats={A:[],B:[]};activeMat="A";problem=makeProblem();
+ if(mode.startsWith("sub")){
+   const c=decimalCounts(problem.a);
+   Object.keys(c).forEach(t=>{for(let i=0;i<c[t];i++)mats.A.push(t)});
+ }
+ feedback.textContent="";feedback.className="feedback";
+ answerArea.classList.remove("show");answer.value="";resultBox.classList.remove("show");
+ render();
+}
+
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
+ mode=b.dataset.mode;document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));round=1;
+let lastWorksheet=null;
+
+function fmt(n){
+  return String(Math.round(n*1000)/1000);
+}
+
+function randomChoice(arr){return arr[Math.floor(Math.random()*arr.length)]}
+
+function makeWorksheetProblem(which, challenge=false){
+  let a,b;
+  if(which==="add"){
+    const pairs=challenge
+      ? [[1.25,.34],[2.41,.36],[1.52,.27],[3.14,.25],[2.63,.14],[1.44,.33],[2.72,.16],[3.25,.42],[1.61,.28],[2.53,.24]]
+      : [[.4,.23],[.5,.14],[.6,.22],[.3,.15],[.7,.12],[.8,.11],[1.2,.34],[1.4,.25],[.5,.31],[.6,.13]];
+    [a,b]=randomChoice(pairs);
+  }
+  if(which==="sub"){
+    const pairs=challenge
+      ? [[1.85,.43],[2.76,.34],[1.64,.22],[3.95,.51],[2.84,.42],[1.73,.31],[2.65,.24],[3.42,.21],[1.96,.54],[2.57,.35]]
+      : [[.75,.23],[.86,.24],[.67,.35],[.94,.42],[.58,.16],[1.45,.23],[1.76,.34],[.88,.26],[.69,.27],[.97,.45]];
+    [a,b]=randomChoice(pairs);
+  }
+  if(which==="addRegroup"){
+    const pairs=challenge
+      ? [[1.68,.47],[2.57,.68],[1.76,.58],[3.49,.76],[2.38,.87],[1.95,.46],[2.69,.58],[3.77,.48],[1.86,.79],[2.48,.67]]
+      : [[.68,.27],[.57,.36],[.48,.35],[.76,.18],[.39,.46],[.67,.28],[.58,.37],[.49,.25],[.78,.16],[.66,.29]];
+    [a,b]=randomChoice(pairs);
+  }
+  if(which==="subRegroup"){
+    const pairs=challenge
+      ? [[1.2,.46],[2.03,.78],[1.52,.68],[3.11,.57],[2.4,.86],[1.71,.96],[2.02,.47],[3.2,.85],[1.43,.67],[2.31,.58]]
+      : [[.5,.23],[.7,.36],[.62,.28],[.81,.47],[1.03,.58],[.6,.27],[.72,.38],[.9,.46],[1.1,.64],[.53,.29]];
+    [a,b]=randomChoice(pairs);
+  }
+  return {a:r3(a),b:r3(b),ans:r3(which.startsWith("add")?a+b:a-b)};
+}
+
+function modeName(which){
+  return {
+    add:"Tāpiri — Kāore he whakawhiti",
+    sub:"Tango — Kāore he whakawhiti",
+    addRegroup:"Tāpiri Whakawhiti",
+    subRegroup:"Tango Whakawhiti"
+  }[which];
+}
+
+function modeInstruction(which){
+  if(which==="add") return "Whakaotia ngā rapanga tāpiri. Ka taea te whakamahi poraka uara tū hei āwhina.";
+  if(which==="sub") return "Whakaotia ngā rapanga tango. Whakaarohia ngā poraka ka tangohia mai i te tau tīmatanga.";
+  if(which==="addRegroup") return "Whakaotia ngā rapanga tāpiri. Whakawhitia ngā poraka ina tae ki te 10.";
+  return "Whakaotia ngā rapanga tango. Whakawhitia he poraka uara tū ina kore e rahi ngā poraka iti.";
+}
+
+function buildWorksheet(challenge=false){
+  const qs=[];
+  for(let i=0;i<10;i++){
+    let p, guard=0;
+    do{
+      p=makeWorksheetProblem(mode,challenge);
+      guard++;
+    }while(qs.some(q=>q.a===p.a&&q.b===p.b) && guard<50);
+    qs.push(p);
+  }
+  lastWorksheet={mode,challenge,qs};
+  sheet.classList.remove("answerMode");
+  sheetTitle.textContent=challenge?"Hei Mahi Wero":"Hei Mahi Māku";
+  sheetLevel.textContent=modeName(mode);
+  answerLevel.textContent=modeName(mode);
+  sheetInstruction.textContent=modeInstruction(mode);
+
+  const op=mode.startsWith("add")?"+":"−";
+  sheetQuestions.innerHTML=qs.map((q,i)=>
+    `<div class="sheetQ">
+      <b>${i+1}.</b>
+      <span>${fmt(q.a)} ${op} ${fmt(q.b)} = <span class="space"></span></span>
+      <span class="sheetTag">${mode.includes("Regroup")?"Whakawhiti":"Uara Tū"}</span>
+    </div>`
+  ).join("");
+
+  answerList.innerHTML=qs.map((q,i)=>
+    `<div class="answerItem"><b>${i+1}.</b> ${fmt(q.a)} ${op} ${fmt(q.b)} = <b>${fmt(q.ans)}</b></div>`
+  ).join("");
+
+  worksheetModal.classList.add("open");
+  document.body.classList.add("modalOpen");
+}
+
+function openAnswersOnly(){
+  if(!lastWorksheet || lastWorksheet.mode!==mode) buildWorksheet(false);
+  sheet.classList.add("answerMode");
+  worksheetModal.classList.add("open");
+  document.body.classList.add("modalOpen");
+}
+
+makeMatched.onclick=()=>buildWorksheet(false);
+makeChallenge.onclick=()=>buildWorksheet(true);
+showAnswers.onclick=()=>openAnswersOnly();
+closeSheet.onclick=()=>{
+  worksheetModal.classList.remove("open");
+  document.body.classList.remove("modalOpen");
+  sheet.classList.remove("answerMode");
+};
+printSheet.onclick=()=>window.print();
+teacherAnswers.onclick=()=>{
+  sheet.classList.toggle("answerMode");
+  teacherAnswers.textContent=sheet.classList.contains("answerMode")
+    ?"← Hoki ki te Pepamahi"
+    :"🔒 Ngā Whakautu — Mā te Kaiako";
+};
+
+refreshSheet.onclick=()=>{
+  const challenge=lastWorksheet ? lastWorksheet.challenge : false;
+  buildWorksheet(challenge);
+};
+worksheetModal.addEventListener("click",e=>{
+  if(e.target===worksheetModal){
+    worksheetModal.classList.remove("open");
+    document.body.classList.remove("modalOpen");
+    sheet.classList.remove("answerMode");
+  }
+});
+
+
+document.querySelectorAll(".bankBlock.whole").forEach(el=>el.innerHTML=wholeCubeSVG());
+setNew();
+});
+document.querySelectorAll(".mat").forEach(m=>m.onclick=e=>{
+ if(e.target.classList.contains("block"))return;
+ activeMat=m.dataset.mat;render();
+});
+
+
+const downMap={whole:"tenth",tenth:"hundredth",hundredth:"thousandth"};
+const downNames={
+ whole:"1 tahi → 10 hautekau",
+ tenth:"1 hautekau → 10 haurau",
+ hundredth:"1 haurau → 10 haumano"
+};
+
+function closeBlockMenu(){
+ blockMenu.style.display="none";
+ menuActions.innerHTML="";
+}
+function openBlockMenu(e,d,type,index){
+ if(!mode.startsWith("sub") || d.dataset.from!=="A")return;
+ const smaller=downMap[type];
+ if(!smaller){closeBlockMenu();return}
+ menuActions.innerHTML="";
+ const btn=document.createElement("button");
+ btn.textContent="↘ Whakawhiti: "+downNames[type];
+ btn.onclick=()=>{
+   if(index<0||index>=mats.A.length||mats.A[index]!==type){closeBlockMenu();return}
+   mats.A.splice(index,1);
+   for(let i=0;i<10;i++)mats.A.push(smaller);
+   closeBlockMenu();
+   render();
+ };
+ menuActions.appendChild(btn);
+ blockMenu.style.left=Math.min(e.clientX+8,window.innerWidth-255)+"px";
+ blockMenu.style.top=Math.min(e.clientY+8,window.innerHeight-100)+"px";
+ blockMenu.style.display="block";
+}
+document.addEventListener("click",closeBlockMenu);
+window.addEventListener("resize",closeBlockMenu);
+
+// Drag blocks between the two workspaces.
+// For subtraction this is the core action: blocks physically leave Tau Timatanga
+// and arrive in Tangohia, so the remainder stays visible in Tau Timatanga.
+document.querySelectorAll(".mat").forEach(m=>{
+ m.addEventListener("dragover",e=>{e.preventDefault();m.classList.add("dragover")});
+ m.addEventListener("dragleave",()=>m.classList.remove("dragover"));
+ m.addEventListener("drop",e=>{
+   e.preventDefault();m.classList.remove("dragover");
+   let data;
+   try{data=JSON.parse(e.dataTransfer.getData("text/plain"))}catch(err){return}
+   const to=m.dataset.mat;
+   if(!data||data.from===to)return;
+   const from=data.from, idx=Number(data.index);
+   if(!mats[from]||idx<0||idx>=mats[from].length)return;
+   const [type]=mats[from].splice(idx,1);
+   mats[to].push(type);
+   activeMat=to;
+   render();
+ });
+});
+
+document.querySelectorAll(".add").forEach(b=>b.onclick=()=>{
+ if(mode.startsWith("sub"))return;
+ mats[activeMat].push(b.dataset.type);render()
+});
+clear.onclick=()=>{mats={A:[],B:[]};feedback.textContent="";answerArea.classList.remove("show");render()};
+
+checkBuild.onclick=()=>{
+ if(mode.startsWith("sub")){
+   const bok=matches("B",problem.b);
+   const conserved=Math.abs((matValue("A")+matValue("B"))-problem.a)<.0005;
+   const remainder=Math.abs(matValue("A")-problem.ans)<.0005;
+   if(bok&&conserved&&remainder){
+     feedback.textContent=`Ka pai! Kua tangohia te ${problem.b}. Ko te ${matValue("A")} te toenga.`;
+     feedback.className="feedback good";
+     answerArea.classList.add("show");
+   }else if(!bok){
+     feedback.textContent=`Tōia ngā poraka mai i te Tau Tīmatanga kia rite te wāhi Tangohia ki te ${problem.b}.`;
+     feedback.className="feedback bad";
+   }else{
+     feedback.textContent="Tirohia anō ngā poraka. Me noho tonu te uara katoa o ngā poraka.";
+     feedback.className="feedback bad";
+   }
+ }else{
+   const aok=matches("A",problem.a),bok=matches("B",problem.b);
+   if(aok&&bok){
+     feedback.textContent="Ka pai! Kua tika ngā tau e rua. Ināianei, kimihia te tapeke.";
+     feedback.className="feedback good";answerArea.classList.add("show");
+   }else{
+     feedback.textContent="Tirohia anō ngā tau e rua. Me ōrite ngā poraka ki ngā tau o te rapanga.";
+     feedback.className="feedback bad";
+   }
+ }
+};
+
+checkAnswer.onclick=()=>{
+ const v=Number(answer.value);
+ if(Math.abs(v-problem.ans)<.0005){
+   feedback.textContent="Ka rawe! He tika te whakautu.";
+   feedback.className="feedback good";
+   resultBlocks.innerHTML="";
+   const c=decimalCounts(problem.ans);
+   Object.keys(c).forEach(t=>{for(let i=0;i<c[t];i++)renderBlock(t,null,resultBlocks,null)});
+   resultBox.classList.add("show");
+   setTimeout(()=>{round=round===10?1:round+1;setNew()},1800);
+ }else{
+   feedback.textContent="Kāore anō. Whakamahia ngā poraka hei āwhina i a koe ki te kimi i te whakautu.";
+   feedback.className="feedback bad";
+ }
+};
+
+// Exchange operates on the active mat.
+exchangeDown.onclick=()=>{
+ if(mode.startsWith("sub"))activeMat="A";
+ // 1 whole -> 10 tenths; else 1 tenth -> 10 hundredths; else 1 hundredth -> 10 thousandths.
+ const choices=[["whole","tenth"],["tenth","hundredth"],["hundredth","thousandth"]];
+ for(const [big,small] of choices){
+   const i=mats[activeMat].indexOf(big);
+   if(i>=0){mats[activeMat].splice(i,1);for(let j=0;j<10;j++)mats[activeMat].push(small);render();return}
+ }
+};
+exchangeUp.onclick=()=>{
+ if(mode.startsWith("sub"))activeMat="A";
+ const choices=[["thousandth","hundredth"],["hundredth","tenth"],["tenth","whole"]];
+ for(const [small,big] of choices){
+   if(count(activeMat,small)>=10){
+     let removed=0;mats[activeMat]=mats[activeMat].filter(x=>x!==small||removed++>=10);
+     mats[activeMat].push(big);render();return;
+   }
+ }
+};
+
+
+let lastWorksheet=null;
+
+function fmt(n){
+  return String(Math.round(n*1000)/1000);
+}
+
+function randomChoice(arr){return arr[Math.floor(Math.random()*arr.length)]}
+
+function makeWorksheetProblem(which, challenge=false){
+  let a,b;
+  if(which==="add"){
+    const pairs=challenge
+      ? [[1.25,.34],[2.41,.36],[1.52,.27],[3.14,.25],[2.63,.14],[1.44,.33],[2.72,.16],[3.25,.42],[1.61,.28],[2.53,.24]]
+      : [[.4,.23],[.5,.14],[.6,.22],[.3,.15],[.7,.12],[.8,.11],[1.2,.34],[1.4,.25],[.5,.31],[.6,.13]];
+    [a,b]=randomChoice(pairs);
+  }
+  if(which==="sub"){
+    const pairs=challenge
+      ? [[1.85,.43],[2.76,.34],[1.64,.22],[3.95,.51],[2.84,.42],[1.73,.31],[2.65,.24],[3.42,.21],[1.96,.54],[2.57,.35]]
+      : [[.75,.23],[.86,.24],[.67,.35],[.94,.42],[.58,.16],[1.45,.23],[1.76,.34],[.88,.26],[.69,.27],[.97,.45]];
+    [a,b]=randomChoice(pairs);
+  }
+  if(which==="addRegroup"){
+    const pairs=challenge
+      ? [[1.68,.47],[2.57,.68],[1.76,.58],[3.49,.76],[2.38,.87],[1.95,.46],[2.69,.58],[3.77,.48],[1.86,.79],[2.48,.67]]
+      : [[.68,.27],[.57,.36],[.48,.35],[.76,.18],[.39,.46],[.67,.28],[.58,.37],[.49,.25],[.78,.16],[.66,.29]];
+    [a,b]=randomChoice(pairs);
+  }
+  if(which==="subRegroup"){
+    const pairs=challenge
+      ? [[1.2,.46],[2.03,.78],[1.52,.68],[3.11,.57],[2.4,.86],[1.71,.96],[2.02,.47],[3.2,.85],[1.43,.67],[2.31,.58]]
+      : [[.5,.23],[.7,.36],[.62,.28],[.81,.47],[1.03,.58],[.6,.27],[.72,.38],[.9,.46],[1.1,.64],[.53,.29]];
+    [a,b]=randomChoice(pairs);
+  }
+  return {a:r3(a),b:r3(b),ans:r3(which.startsWith("add")?a+b:a-b)};
+}
+
+function modeName(which){
+  return {
+    add:"Tāpiri — Kāore he whakawhiti",
+    sub:"Tango — Kāore he whakawhiti",
+    addRegroup:"Tāpiri Whakawhiti",
+    subRegroup:"Tango Whakawhiti"
+  }[which];
+}
+
+function modeInstruction(which){
+  if(which==="add") return "Whakaotia ngā rapanga tāpiri. Ka taea te whakamahi poraka uara tū hei āwhina.";
+  if(which==="sub") return "Whakaotia ngā rapanga tango. Whakaarohia ngā poraka ka tangohia mai i te tau tīmatanga.";
+  if(which==="addRegroup") return "Whakaotia ngā rapanga tāpiri. Whakawhitia ngā poraka ina tae ki te 10.";
+  return "Whakaotia ngā rapanga tango. Whakawhitia he poraka uara tū ina kore e rahi ngā poraka iti.";
+}
+
+function buildWorksheet(challenge=false){
+  const qs=[];
+  for(let i=0;i<10;i++){
+    let p, guard=0;
+    do{
+      p=makeWorksheetProblem(mode,challenge);
+      guard++;
+    }while(qs.some(q=>q.a===p.a&&q.b===p.b) && guard<50);
+    qs.push(p);
+  }
+  lastWorksheet={mode,challenge,qs};
+  sheet.classList.remove("answerMode");
+  sheetTitle.textContent=challenge?"Hei Mahi Wero":"Hei Mahi Māku";
+  sheetLevel.textContent=modeName(mode);
+  answerLevel.textContent=modeName(mode);
+  sheetInstruction.textContent=modeInstruction(mode);
+
+  const op=mode.startsWith("add")?"+":"−";
+  sheetQuestions.innerHTML=qs.map((q,i)=>
+    `<div class="sheetQ">
+      <b>${i+1}.</b>
+      <span>${fmt(q.a)} ${op} ${fmt(q.b)} = <span class="space"></span></span>
+      <span class="sheetTag">${mode.includes("Regroup")?"Whakawhiti":"Uara Tū"}</span>
+    </div>`
+  ).join("");
+
+  answerList.innerHTML=qs.map((q,i)=>
+    `<div class="answerItem"><b>${i+1}.</b> ${fmt(q.a)} ${op} ${fmt(q.b)} = <b>${fmt(q.ans)}</b></div>`
+  ).join("");
+
+  worksheetModal.classList.add("open");
+  document.body.classList.add("modalOpen");
+}
+
+function openAnswersOnly(){
+  if(!lastWorksheet || lastWorksheet.mode!==mode) buildWorksheet(false);
+  sheet.classList.add("answerMode");
+  worksheetModal.classList.add("open");
+  document.body.classList.add("modalOpen");
+}
+
+makeMatched.onclick=()=>buildWorksheet(false);
+makeChallenge.onclick=()=>buildWorksheet(true);
+showAnswers.onclick=()=>openAnswersOnly();
+closeSheet.onclick=()=>{
+  worksheetModal.classList.remove("open");
+  document.body.classList.remove("modalOpen");
+  sheet.classList.remove("answerMode");
+};
+printSheet.onclick=()=>window.print();
+teacherAnswers.onclick=()=>{
+  sheet.classList.toggle("answerMode");
+  teacherAnswers.textContent=sheet.classList.contains("answerMode")
+    ?"← Hoki ki te Pepamahi"
+    :"🔒 Ngā Whakautu — Mā te Kaiako";
+};
+
+refreshSheet.onclick=()=>{
+  const challenge=lastWorksheet ? lastWorksheet.challenge : false;
+  buildWorksheet(challenge);
+};
+worksheetModal.addEventListener("click",e=>{
+  if(e.target===worksheetModal){
+    worksheetModal.classList.remove("open");
+    document.body.classList.remove("modalOpen");
+    sheet.classList.remove("answerMode");
+  }
+});
+
+
+document.querySelectorAll(".bankBlock.whole").forEach(el=>el.innerHTML=wholeCubeSVG());
+setNew();
+</script>
+</body>
+</html>
